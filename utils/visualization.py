@@ -63,7 +63,7 @@ def plot_pipeline_steps(video_path: str, frame0: int, frame1: int, img_dir: str 
 
     front = morphology.binary_opening(front, footprint)
 
-    front = morphology.skeletonize(front)
+    front = morphology.medial_axis(front)
     front = np.where(front == 1, 255, 0).astype(np.uint8)
 
     plot_simple(front, "front_morphological", img_dir)
