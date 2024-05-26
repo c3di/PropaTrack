@@ -1,8 +1,8 @@
 """Module contains utils for processing video frames with skimage and numpy."""
 import cv2
-from skimage import morphology
 import numpy as np
 from scipy.spatial.distance import cdist
+from skimage import morphology
 
 
 def front_from_frames(frame0: np.ndarray,
@@ -94,7 +94,6 @@ def process_contour(contour: np.ndarray):
     steps = max(int(len(contour) / num_arrows), 1)
     contour = contour[::steps]
 
-    # Remove outliers.
     intra_dists = np.diagonal(cdist(contour[:-1], contour[1:]))
     mean_dist = np.mean(intra_dists)
 
@@ -132,3 +131,30 @@ def contours_from_front(front: np.ndarray, min_length: int = 25):
     contours = [np.squeeze(contour) for contour in contours if cv2.arcLength(contour, False) > min_length]
 
     return contours
+
+
+def calculate_distance(points):
+    return sum(np.linalg.norm(points[i] - points[i - 1]) for i in range(1, len(points)))
+
+
+def two_opt(points, improvement_threshold):
+    count = 0
+    while True:
+        count += 1
+        distance = calculate_distance(points)
+        for i in range(len(points) - 1):
+            for j in range(i + 2, len(points)):
+                if j - i == 1: continue
+                new_points = points[:]
+                new_points[i:j] = points[i:j][::-1]
+                new_distance = calculate_distance(new_points)
+                if new_distance < distance:
+                    points = new_points
+                    break
+            else:
+                continue
+            break
+        else:
+            if count > improvement_threshold:
+                break
+    return points
