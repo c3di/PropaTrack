@@ -4,6 +4,7 @@ from typing import Tuple
 import cv2
 import numpy as np
 
+
 def get_video_frames(video_path: str, grayscale: bool = True) -> np.array:
     """
     Read video frames from a video file and return them as a numpy array.
