@@ -92,7 +92,12 @@ def process_contour(contour: np.ndarray):
     length_per_arrow = 35
     num_arrows = cv2.arcLength(contour, False) / length_per_arrow + 1
     steps = max(int(len(contour) / num_arrows), 1)
-    contour = contour[::steps]
+    if (len(contour) - 1) % steps == 0:
+        contour = contour[::steps]
+    else:
+        # Make sure the last point is included, so contours don't get cut off.
+        contour = np.append(contour[::steps], contour[-1:], axis=0)
+
 
     intra_dists = np.diagonal(cdist(contour[:-1], contour[1:]))
     mean_dist = np.mean(intra_dists)
