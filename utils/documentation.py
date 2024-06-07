@@ -9,12 +9,14 @@ class Documenter:
     def __init__(self,
                  experiment_dir: str,
                  experiment_name: str,
-                 experiment_params: Dict):
+                 experiment_params: Dict,
+                 exists_ok: bool = False):
         """
         Set up experiment documentation in a txt file.
         """
         path_to_experiment = f"{experiment_dir}/{experiment_name}"
-        os.makedirs(path_to_experiment, exist_ok=True)
+        os.makedirs(path_to_experiment, exist_ok=exists_ok)
+
 
         file_path = path_to_experiment + "/experiment_log.txt"
         self.experiment = open(file_path, "w")
@@ -27,6 +29,13 @@ class Documenter:
             self.experiment.write(f"{key}: {value}\n")
 
         self.experiment.write("Further information:\n")
+
+    def comment(self, comment: str) -> None:
+        """Add some extra information about the experiment such as purpose."""
+        self.experiment.write("\n")
+        self.experiment.write("Comment:\n")
+        self.experiment.write(comment)
+        self.experiment.write("\n\n")
 
     def log(self, info: str) -> None:
         """ Add some more information to the experiment protocol."""
