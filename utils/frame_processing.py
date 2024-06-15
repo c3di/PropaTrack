@@ -1,13 +1,16 @@
 """Module contains utils for processing video frames with skimage and numpy."""
+from typing import Tuple
+
 import cv2
 import numpy as np
+from scipy import interpolate
 from scipy.spatial.distance import cdist
 from skimage import morphology
 
 
 def front_from_frames(frame0: np.ndarray,
                       frame1: np.ndarray,
-                      threshold_low: float = 35,
+                      threshold: float = 35,
                       version: str = "v2") -> np.ndarray:
     """
     Generate a denoised version of the reaction front from two frames.
@@ -20,8 +23,8 @@ def front_from_frames(frame0: np.ndarray,
     frame1 : np.ndarray
         Second frame.
 
-    threshold_low : float
-        Lower threshold for binarization.
+    threshold : float
+        Lower threshold for binarization. Set all pixel values below this threshold to 0.
 
     version : str
         Version of the processing pipeline.
@@ -46,15 +49,15 @@ def front_from_frames(frame0: np.ndarray,
 
         # Threshold and binarize the image.
         front[front > 180] = 0
-        front[front < threshold_low] = 0
+        front[front < threshold] = 0
         front[front > 0] = 255
 
     elif version == "v2":
         # Threshold and binarize the images.
-        frame0[frame0 > threshold_low] = 255
-        frame0[frame0 < threshold_low] = 0
-        frame1[frame1 > threshold_low] = 255
-        frame1[frame1 < threshold_low] = 0
+        frame0[frame0 > threshold] = 255
+        frame0[frame0 < threshold] = 0
+        frame1[frame1 > threshold] = 255
+        frame1[frame1 < threshold] = 0
 
         # Calculate the difference between two frames.
         front = frame1 - frame0
@@ -67,6 +70,30 @@ def front_from_frames(frame0: np.ndarray,
     front = np.where(front == 1, 255, 0).astype(np.uint8)
 
     return front
+
+
+def contours_from_front(front: np.ndarray, min_length: int = 25):
+    """
+    Extract contours from a reaction front.
+
+    Parameters
+    ----------
+    front : np.ndarray
+        Reaction front.
+
+    min_length : int
+        Minimum length of a contour.
+
+    Returns
+    -------
+    np.ndarray
+        Contours of the reaction front.
+    """
+
+    contours, _ = cv2.findContours(front, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    contours = [np.squeeze(contour) for contour in contours if cv2.arcLength(contour, False) > min_length]
+
+    return contours
 
 
 def process_contour(contour: np.ndarray):
@@ -98,48 +125,69 @@ def process_contour(contour: np.ndarray):
         # Make sure the last point is included, so contours don't get cut off.
         contour = np.append(contour[::steps], contour[-1:], axis=0)
 
-
     intra_dists = np.diagonal(cdist(contour[:-1], contour[1:]))
     mean_dist = np.mean(intra_dists)
 
-    outlier_dists = np.where(intra_dists > 3 * mean_dist)
-    if len(outlier_dists[0]) >= 1:
-        if outlier_dists[0][0] >= len(intra_dists) - 3:
-            contour = contour[:-(len(intra_dists) - outlier_dists[0][0])]
+    outlier_indices = np.where(intra_dists > 3 * mean_dist)[0]
+    if len(outlier_indices) >= 1:
+        idx_first_outlier = outlier_indices[0]
+        if idx_first_outlier >= len(intra_dists) - 3:
+            # outliers = contour[idx_first_outlier+1:]
+            # contour = contour[:idx_first_outlier]
+            # for ol in outliers:
+            #     ol = np.expand_dims(ol, axis=0)
+            #     idx_ol = np.argmin(cdist(ol, contour))
+            #     contour = np.insert(contour, idx_ol+1, ol, axis=0)
+            contour = contour[:-(len(intra_dists) - idx_first_outlier)]
         else:
-            contour_truncated = contour[:outlier_dists[0][0] + 1]
-            contour_rest = contour[outlier_dists[0][-1] + 1:]
+            contour_truncated = contour[:idx_first_outlier + 1]
+            idx_last_outlier = outlier_indices[-1]
+            contour_rest = contour[idx_last_outlier + 1:]
             contour = np.concatenate((contour_rest[::-1], contour_truncated))
 
     return contour
 
 
-def contours_from_front(front: np.ndarray, min_length: int = 25):
+def calculate_distance(points):
+    return sum(np.linalg.norm(points[i] - points[i - 1]) for i in range(1, len(points)))
+
+
+def spline_from_contour(contour: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """
-    Extract contours from a reaction front.
+    Fit spline to contour and calculate normals.
 
     Parameters
     ----------
-    front : np.ndarray
-        Reaction front.
-
-    min_length : int
-        Minimum length of a contour.
+    contour : np.ndarray
+        preprocessed contour.
 
     Returns
     -------
-    np.ndarray
-        Contours of the reaction front.
+    Tuple[np.ndarray, np.ndarray]
+        Tuple containing the spline and the normals.
+
+    Notes
+    -----
+    It is advised but not necessary to preprocess the contour before applying this function.
+
+    See Also
+    --------
+    process_contour: A function to preprocess the contour.
     """
 
-    contours, _ = cv2.findContours(front, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-    contours = [np.squeeze(contour) for contour in contours if cv2.arcLength(contour, False) > min_length]
+    X = contour[:, 0]
+    Y = contour[:, 1]
 
-    return contours
+    k = 1 if len(contour) < 10 else 3
 
+    tck, u = interpolate.splprep([X, Y], s=2, k=k)
+    spline = np.array(interpolate.splev(u, tck)).T
 
-def calculate_distance(points):
-    return sum(np.linalg.norm(points[i] - points[i - 1]) for i in range(1, len(points)))
+    tangents = interpolate.splev(u, tck, der=1)
+    normals = np.array([-tangents[1], tangents[0]]).T
+    normals = normals / np.linalg.norm(normals, axis=1).reshape(-1, 1)
+
+    return spline, normals
 
 
 def two_opt(points, improvement_threshold):
