@@ -181,8 +181,7 @@ def dist_to_idx(dist: float) -> int:
 
 
 def plot_vector_field(results: np.ndarray,
-                      result_path: str,
-                      show: bool = False) -> None:
+                      result_path: str) -> None:
     """
     Plot the vector field for the reaction speed.
 
@@ -193,9 +192,6 @@ def plot_vector_field(results: np.ndarray,
 
     result_path : str
         Where to save the result.
-
-    show : bool
-        Whether to show the plot.
 
     See Also
     ----------
@@ -221,8 +217,7 @@ def plot_vector_field(results: np.ndarray,
 
     plt.axis("off")
     plt.savefig(result_path)
-    if show:
-        plt.show()
+    plt.show()
     plt.close(fig)
 
 
