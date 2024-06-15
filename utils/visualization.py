@@ -204,7 +204,10 @@ def plot_vector_field(results: np.ndarray,
 
     fig = plt.figure(dpi=200)
 
-    for result in tqdm(results):
+    for result in tqdm(results,
+                       desc="Plotting vector field ",
+                       colour="#6DBEA0",
+                       unit=" vectors"):
         x, y, nx, ny, speed = result[2:]
         plt.quiver(x,
                    y,

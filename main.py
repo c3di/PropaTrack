@@ -40,9 +40,6 @@ if __name__ == '__main__':
     # video_path.split("/")[-1] give the name of the video.
     result_path = f"{args.result_dir}/vector_field_{video_path.split('/')[-1]}"
 
-    print("Loading video frames...")
     frames = get_video_frames(video_path)
-    print("Running image pipeline...")
     results = pipeline(frames, args.threshold, args.min_length)
-    print("Plotting vector field...")
-    plot_vector_field(results, "results/vector_field_c_shape.png")
+    plot_vector_field(results, "results/vector_field_c_shape.png", args.show)

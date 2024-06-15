@@ -40,7 +40,10 @@ def pipeline(frames: np.ndarray,
     h, w = frames[0].shape
     Speeds = []
 
-    for i, _ in tqdm(enumerate(frames[:-2])):
+    for i in tqdm(range(len(frames[:-2])),
+                  desc="Running image pipeline",
+                  colour="#6DBEA0",
+                  unit=" frames"):
 
         front = front_from_frames(frames[i],
                                   frames[i+1],
