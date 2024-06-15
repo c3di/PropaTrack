@@ -27,8 +27,12 @@ def pipeline(frames: np.ndarray,
     Returns
     -------
     np.ndarray
-        Vector field for reaction speed. Each row contains the following information:
-        [frame_index, contour_index, x_position, y_position, x_normal, y_normal, speed]
+        Vector field for reaction speed.
+
+    Notes
+    -------
+    Format of the vector field: \n
+    [frame, contour, x_pos, y_pos, x_normal, y_normal, speed]
 
     See Also
     --------
@@ -46,12 +50,12 @@ def pipeline(frames: np.ndarray,
                   unit=" frames"):
 
         front = front_from_frames(frames[i],
-                                  frames[i+1],
+                                  frames[i + 1],
                                   threshold=threshold,
                                   version="v2")
 
-        front_next = front_from_frames(frames[i+1],
-                                       frames[i+2],
+        front_next = front_from_frames(frames[i + 1],
+                                       frames[i + 2],
                                        threshold=threshold,
                                        version="v2")
 
@@ -66,7 +70,7 @@ def pipeline(frames: np.ndarray,
 
             for spline_point, spline_normal in zip(spline, normals):
                 # Distance can't be larger than image diagonal
-                min_dist = h**2 + w**2
+                min_dist = h ** 2 + w ** 2
                 for contour_next in contours_next:
                     distances = cdist(np.expand_dims(spline_point, axis=0), contour_next)
                     dist = np.min(distances)
@@ -76,3 +80,34 @@ def pipeline(frames: np.ndarray,
                 Speeds.append([i, j, spline_point[0], spline_point[1], spline_normal[0], spline_normal[1], min_dist])
 
     return np.array(Speeds)
+
+
+def write_data(speeds: np.ndarray, result_path: str):
+    """
+    Write the array representing the vector field to a csv file.
+
+    Parameters
+    ----------
+    speeds : np.ndarray
+        Vector field for reaction speed.
+
+    result_path : str
+        Path to the result directory.
+
+    Notes
+    -------
+    Format of the vector field: \n
+    [frame, contour, x_pos, y_pos, x_normal, y_normal, speed]
+
+    See Also
+    --------
+    pipeline : How the vector field is generated.
+    """
+    header = "frame,contour,x_pos,y_pos,x_normal,y_normal,speed"
+    # First four columns are integers, last three are floats with 3 decimal places.
+    fmt = "%d", "%d", "%d", "%d", "%1.3f", "%1.3f", "%1.3f"
+    np.savetxt(result_path,
+               speeds,
+               fmt=fmt,
+               delimiter=",",
+               header=header)

@@ -1,15 +1,17 @@
 import argparse
 
-from utils.pipeline import pipeline
+from utils.pipeline import pipeline, write_data
 from utils.video_handling import get_video_frames
 from utils.visualization import plot_vector_field
+
 
 def restricted_int(x):
     """Type for argparse - int between 0 and 255."""
     x = int(x)
     if x < 0 or x > 255:
-        raise argparse.ArgumentTypeError("%r not in range [0, 255]"%(x,))
+        raise argparse.ArgumentTypeError("%r not in range [0, 255]" % (x,))
     return x
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
@@ -38,8 +40,13 @@ if __name__ == '__main__':
 
     video_path = args.video_path
     # video_path.split("/")[-1] give the name of the video.
-    result_path = f"{args.result_dir}/vector_field_{video_path.split('/')[-1]}"
+    result_path = f"{args.result_dir}/vector_field_{video_path.split('/')[-1].split('.')[0]}"
+    result_path_img = result_path + ".png"
+    result_path_txt = result_path + ".txt"
 
     frames = get_video_frames(video_path)
     results = pipeline(frames, args.threshold, args.min_length)
-    plot_vector_field(results, "results/vector_field_c_shape.png", args.show)
+    write_data(results, result_path_txt)
+    print(f"Successfully saved the vector field as a .txt file to {result_path}.")
+    if args.show:
+        plot_vector_field(results, result_path_img)
