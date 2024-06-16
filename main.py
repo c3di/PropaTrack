@@ -1,3 +1,5 @@
+"""Main script to run the pipeline generating the vector field."""
+
 import argparse
 import os
 
@@ -7,10 +9,10 @@ from utils.visualization import plot_vector_field
 
 
 def restricted_int(x):
-    """Type for argparse - int between 0 and 255."""
+    """Type for argparse to restrict the input to the range [0, 255]."""
     x = int(x)
     if x < 0 or x > 255:
-        raise argparse.ArgumentTypeError("%r not in range [0, 255]" % (x,))
+        raise argparse.ArgumentTypeError(f"{x} not in range [0, 255]")
     return x
 
 
@@ -44,7 +46,8 @@ def main(arguments: argparse.Namespace) -> None:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         prog="PropaTrack",
-        description="Track the speed of self-propagating exothermic reactions in reactive multilayer foils.",
+        description="Track the speed of self-propagating"
+        "exothermic reactions in reactive multilayer foils.",
     )
 
     parser.add_argument("video_path", help="Path to the raw video.")

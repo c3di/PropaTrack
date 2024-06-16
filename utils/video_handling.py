@@ -1,3 +1,5 @@
+"""Functionality for making video frames accessible to other functions."""
+
 import os
 from typing import Tuple
 

@@ -1,4 +1,7 @@
-"""This module contains functionality for documenting experiments executed in the jupyter notebook."""
+"""
+This module contains functionality for documenting experiments
+executed in the jupyter notebook.
+"""
 
 import os
 from time import gmtime, strftime
@@ -22,7 +25,7 @@ class Documenter:
         os.makedirs(path_to_experiment, exist_ok=exists_ok)
 
         file_path = path_to_experiment + "/experiment_log.txt"
-        self.experiment = open(file_path, "w")
+        self.experiment = open(file_path, "w", encoding="utf-8")
 
         self.experiment.write("Experiment Protocol:\n\n")
         self.experiment.write(f"Name: {experiment_name}\n")

@@ -1,4 +1,7 @@
-"""Pipeline takes in a video or a set of frames and processes them to generate a vector field for reaction speed."""
+"""
+Pipeline takes in a video or a set of frames and processes them
+to generate a vector field for reaction speed.
+"""
 
 import numpy as np
 from tqdm import tqdm
@@ -14,7 +17,8 @@ from utils.frame_processing import (
 
 def pipeline(frames: np.ndarray, threshold: int = 25, min_length: int = 5) -> np.ndarray:
     """
-    Process the frames to generate a vector field indicating the reaction speed at evenly spread points for each frame.
+    Process the frames to generate a vector field indicating the reaction speed
+    at evenly spread points for each frame.
 
     Parameters
     ----------
@@ -44,18 +48,17 @@ def pipeline(frames: np.ndarray, threshold: int = 25, min_length: int = 5) -> np
     frame_processing.contours_from_front : How contours are extracted.
     """
 
-    Speeds = []
+    speeds = []
 
     for i, _ in enumerate(
         tqdm(frames[:-2], desc="Running image pipeline", colour="#6DBEA0", unit=" frames")
     ):
 
         front = front_from_frames(frames[i], frames[i + 1], threshold=threshold)
-
-        front_next = front_from_frames(frames[i + 1], frames[i + 2], threshold=threshold)
-
         contours = contours_from_front(front, min_length=min_length)
-        contours_next = contours_from_front(front_next, min_length=min_length)
+
+        front = front_from_frames(frames[i + 1], frames[i + 2], threshold=threshold)
+        contours_next = contours_from_front(front, min_length=min_length)
 
         for j, contour in enumerate(contours):
 
@@ -64,13 +67,11 @@ def pipeline(frames: np.ndarray, threshold: int = 25, min_length: int = 5) -> np
             spline, normals = spline_from_contour(contour)
 
             for point, normal in zip(spline, normals):
-
                 min_dist = dist_to_nearest(point, contours_next)
 
-                if min_dist < np.inf:
-                    Speeds.append([i, j, point[0], point[1], normal[0], normal[1], min_dist])
+                speeds.append([i, j, point[0], point[1], normal[0], normal[1], min_dist])
 
-    return np.array(Speeds)
+    return np.array(speeds)
 
 
 def write_data(speeds: np.ndarray, result_path: str):

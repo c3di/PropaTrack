@@ -222,35 +222,34 @@ def dist_to_nearest(point: np.ndarray, contours_next: list[np.ndarray]) -> float
     for contour_next in contours_next:
         distances = cdist(np.expand_dims(point, axis=0), contour_next)
         dist = np.min(distances)
-        if dist < min_dist:
-            min_dist = dist
+        min_dist = min(min_dist, dist)
 
     return min_dist
 
 
-def calculate_distance(points: np.ndarray) -> float:
-    return sum(np.linalg.norm(points[i] - points[i - 1]) for i in range(1, len(points)))
-
-
-def two_opt(points, improvement_threshold):
-    count = 0
-    while True:
-        count += 1
-        distance = calculate_distance(points)
-        for i in range(len(points) - 1):
-            for j in range(i + 2, len(points)):
-                if j - i == 1:
-                    continue
-                new_points = points[:]
-                new_points[i:j] = points[i:j][::-1]
-                new_distance = calculate_distance(new_points)
-                if new_distance < distance:
-                    points = new_points
-                    break
-            else:
-                continue
-            break
-        else:
-            if count > improvement_threshold:
-                break
-    return points
+# def calculate_distance(points: np.ndarray) -> float:
+#     return sum(np.linalg.norm(points[i] - points[i - 1]) for i in range(1, len(points)))
+#
+#
+# def two_opt(points, improvement_threshold):
+#     count = 0
+#     while True:
+#         count += 1
+#         distance = calculate_distance(points)
+#         for i in range(len(points) - 1):
+#             for j in range(i + 2, len(points)):
+#                 if j - i == 1:
+#                     continue
+#                 new_points = points[:]
+#                 new_points[i:j] = points[i:j][::-1]
+#                 new_distance = calculate_distance(new_points)
+#                 if new_distance < distance:
+#                     points = new_points
+#                     break
+#             else:
+#                 continue
+#             break
+#         else:
+#             if count > improvement_threshold:
+#                 break
+#     return points
