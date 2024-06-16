@@ -1,22 +1,25 @@
 """This module contains functionality for documenting experiments executed in the jupyter notebook."""
+
 import os
-from typing import Dict
 from time import gmtime, strftime
+from typing import Dict
 
 
 class Documenter:
     """Document parameters and information about an experiment."""
-    def __init__(self,
-                 experiment_dir: str,
-                 experiment_name: str,
-                 experiment_params: Dict,
-                 exists_ok: bool = False):
+
+    def __init__(
+        self,
+        experiment_dir: str,
+        experiment_name: str,
+        experiment_params: Dict,
+        exists_ok: bool = False,
+    ):
         """
         Set up experiment documentation in a txt file.
         """
         path_to_experiment = f"{experiment_dir}/{experiment_name}"
         os.makedirs(path_to_experiment, exist_ok=exists_ok)
-
 
         file_path = path_to_experiment + "/experiment_log.txt"
         self.experiment = open(file_path, "w")
@@ -38,8 +41,8 @@ class Documenter:
         self.experiment.write("\n\n")
 
     def log(self, info: str) -> None:
-        """ Add some more information to the experiment protocol."""
-        time = strftime('%H:%M:%S', gmtime())
+        """Add some more information to the experiment protocol."""
+        time = strftime("%H:%M:%S", gmtime())
         self.experiment.write(f"{time}: {info}\n")
 
     def close(self) -> bool:

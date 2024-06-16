@@ -1,14 +1,18 @@
 import os.path
-from tqdm import tqdm
+
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
-
 from scipy import interpolate
 from scipy.spatial.distance import cdist
 from skimage import morphology
+from tqdm import tqdm
 
-from utils.frame_processing import contours_from_front, process_contour, front_from_frames
+from utils.frame_processing import (
+    contours_from_front,
+    process_contour,
+    front_from_frames,
+)
 from utils.video_handling import get_video_frames
 
 IMG_DIR = "results/visualization"
@@ -22,11 +26,13 @@ def plot_simple(img: np.ndarray, title: str, img_dir: str, cmap: str = "gray") -
     plt.close()
 
 
-def plot_pipeline_steps(video_path: str,
-                        frame_idx0: int,
-                        frame_idx1: int,
-                        img_dir: str = IMG_DIR,
-                        version: str = "v2") -> None:
+def plot_pipeline_steps(
+    video_path: str,
+    frame_idx0: int,
+    frame_idx1: int,
+    img_dir: str = IMG_DIR,
+    version: str = "v2",
+) -> None:
     """
     Plot the pipeline steps for the reaction front detection.
 
@@ -111,7 +117,7 @@ def plot_pipeline_steps(video_path: str,
 
     for j, contour in enumerate(contours):
 
-        min_dist = w ** 2 + h ** 2  # Distances can't be larger than image diagonal
+        min_dist = w**2 + h**2  # Distances can't be larger than image diagonal
         for contour_next in contours_next:
             distances = cdist(contour, contour_next)
             dist = np.mean(np.min(distances, axis=0))
@@ -138,8 +144,17 @@ def plot_pipeline_steps(video_path: str,
         normal = np.array([-tangent[1], tangent[0]]).T
         normal = normal / np.linalg.norm(normal, axis=1).reshape(-1, 1)
 
-        plt.quiver(out[1:-1, 0], out[1:-1, 1], normal[1:-1, 0], normal[1:-1, 1],
-                   color=cmap(int(min_dist)), angles='xy', scale_units='xy', scale=0.01, width=0.001)
+        plt.quiver(
+            out[1:-1, 0],
+            out[1:-1, 1],
+            normal[1:-1, 0],
+            normal[1:-1, 1],
+            color=cmap(int(min_dist)),
+            angles="xy",
+            scale_units="xy",
+            scale=0.01,
+            width=0.001,
+        )
 
     fig1.savefig(img_dir + "/" + f"{version}/contours.png")
     fig2.savefig(img_dir + "/" + f"{version}/splines.png")
@@ -150,29 +165,33 @@ def plot_pipeline_steps(video_path: str,
     plt.close(fig3)
 
 
-DFKI_COLORS = np.array([[0.02352941, 0.09019608, 0.10980392],
-                        [0.04313726, 0.11764706, 0.20392157],
-                        [0.05882353, 0.14509805, 0.2901961],
-                        [0.07843138, 0.17254902, 0.38039216],
-                        [0.09411765, 0.2, 0.47058824],
-                        [0.11372549, 0.22745098, 0.56078434],
-                        [0.27450982, 0.25490198, 0.57254905],
-                        [0.43529412, 0.28627452, 0.58431375],
-                        [0.59607846, 0.31764707, 0.59607846],
-                        [0.7529412, 0.34509805, 0.60784316],
-                        [0.91764706, 0.3764706, 0.62352943],
-                        [0.827451, 0.4509804, 0.627451],
-                        [0.7254902, 0.52156866, 0.627451],
-                        [0.627451, 0.59607846, 0.6313726],
-                        [0.5254902, 0.67058825, 0.63529414],
-                        [0.42352942, 0.7411765, 0.63529414],
-                        [0.5137255, 0.7294118, 0.53333336],
-                        [0.62352943, 0.70980394, 0.41960785],
-                        [0.7372549, 0.69411767, 0.30980393],
-                        [0.84705883, 0.6745098, 0.19607843],
-                        [0.9529412, 0.654902, 0.08235294]])
+DFKI_COLORS = np.array(
+    [
+        [0.02352941, 0.09019608, 0.10980392],
+        [0.04313726, 0.11764706, 0.20392157],
+        [0.05882353, 0.14509805, 0.2901961],
+        [0.07843138, 0.17254902, 0.38039216],
+        [0.09411765, 0.2, 0.47058824],
+        [0.11372549, 0.22745098, 0.56078434],
+        [0.27450982, 0.25490198, 0.57254905],
+        [0.43529412, 0.28627452, 0.58431375],
+        [0.59607846, 0.31764707, 0.59607846],
+        [0.7529412, 0.34509805, 0.60784316],
+        [0.91764706, 0.3764706, 0.62352943],
+        [0.827451, 0.4509804, 0.627451],
+        [0.7254902, 0.52156866, 0.627451],
+        [0.627451, 0.59607846, 0.6313726],
+        [0.5254902, 0.67058825, 0.63529414],
+        [0.42352942, 0.7411765, 0.63529414],
+        [0.5137255, 0.7294118, 0.53333336],
+        [0.62352943, 0.70980394, 0.41960785],
+        [0.7372549, 0.69411767, 0.30980393],
+        [0.84705883, 0.6745098, 0.19607843],
+        [0.9529412, 0.654902, 0.08235294],
+    ]
+)
 
-dfki_cmap = LinearSegmentedColormap.from_list('custom_cmap', DFKI_COLORS, N=256)
+dfki_cmap = LinearSegmentedColormap.from_list("custom_cmap", DFKI_COLORS, N=256)
 
 
 def dist_to_idx(dist: float) -> int:
@@ -180,8 +199,7 @@ def dist_to_idx(dist: float) -> int:
     return int(25.5 * dist - 153)
 
 
-def plot_vector_field(results: np.ndarray,
-                      result_path: str) -> None:
+def plot_vector_field(results: np.ndarray, result_path: str) -> None:
     """
     Plot the vector field for the reaction speed.
 
@@ -200,26 +218,24 @@ def plot_vector_field(results: np.ndarray,
 
     fig = plt.figure(dpi=200)
 
-    for result in tqdm(results,
-                       desc="Plotting vector field ",
-                       colour="#6DBEA0",
-                       unit=" vectors"):
+    for result in tqdm(results, desc="Plotting vector field ", colour="#6DBEA0", unit=" vectors"):
         x, y, nx, ny, speed = result[2:]
-        plt.quiver(x,
-                   y,
-                   nx,
-                   ny,
-                   color=dfki_cmap(dist_to_idx(speed)),
-                   angles='xy',
-                   scale_units='xy',
-                   scale=1/(speed + 10e-6),
-                   width=0.001)
+        plt.quiver(
+            x,
+            y,
+            nx,
+            ny,
+            color=dfki_cmap(dist_to_idx(speed)),
+            angles="xy",
+            scale_units="xy",
+            scale=1 / (speed + 10e-6),
+            width=0.001,
+        )
 
     plt.axis("off")
     plt.savefig(result_path)
     plt.show()
     plt.close(fig)
-
 
 
 if __name__ == "__main__":
@@ -228,7 +244,7 @@ if __name__ == "__main__":
     gradient = np.vstack((gradient, gradient))
 
     fig, ax = plt.subplots(figsize=(6, 2))
-    ax.imshow(gradient, aspect='auto', cmap=dfki_cmap)
+    ax.imshow(gradient, aspect="auto", cmap=dfki_cmap)
     ax.set_axis_off()
 
     plt.show()

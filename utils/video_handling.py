@@ -18,7 +18,7 @@ def get_video_frames(video_path: str, grayscale: bool = True) -> np.array:
 
     Returns
     -------
-    np.array
+    np.ndarray
         Video frames as a numpy array of shape (N, H, W, C).
     """
 
@@ -41,7 +41,7 @@ def get_video_frames(video_path: str, grayscale: bool = True) -> np.array:
 
 def setup_experiment(video_name: str, result_path: str) -> Tuple[cv2.VideoWriter, np.ndarray]:
     """
-    Setup the experiment by reading the video frames and creating a video writer object.
+    Set up the experiment by reading the video frames and creating a video writer object.
 
     Parameters
     ----------
@@ -56,7 +56,7 @@ def setup_experiment(video_name: str, result_path: str) -> Tuple[cv2.VideoWriter
     Tuple[cv2.VideoWriter, np.ndarray]
         Tuple containing the video writer object and the video frames.
     """
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
     print(f"Generating flow for {video_name}")
     video_path = "videos/" + video_name
     cap = cv2.VideoCapture(video_path)

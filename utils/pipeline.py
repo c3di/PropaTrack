@@ -1,14 +1,18 @@
 """Pipeline takes in a video or a set of frames and processes them to generate a vector field for reaction speed."""
-import numpy as np
 
+import numpy as np
 from tqdm import tqdm
 
-from utils.frame_processing import front_from_frames, contours_from_front, process_contour, spline_from_contour, dist_to_nearest
+from utils.frame_processing import (
+    front_from_frames,
+    contours_from_front,
+    process_contour,
+    spline_from_contour,
+    dist_to_nearest,
+)
 
 
-def pipeline(frames: np.ndarray,
-             threshold: int = 25,
-             min_length: int = 5) -> np.ndarray:
+def pipeline(frames: np.ndarray, threshold: int = 25, min_length: int = 5) -> np.ndarray:
     """
     Process the frames to generate a vector field indicating the reaction speed at evenly spread points for each frame.
 
@@ -42,18 +46,13 @@ def pipeline(frames: np.ndarray,
 
     Speeds = []
 
-    for i, _ in enumerate(tqdm(frames[:-2],
-                               desc="Running image pipeline",
-                               colour="#6DBEA0",
-                               unit=" frames")):
+    for i, _ in enumerate(
+        tqdm(frames[:-2], desc="Running image pipeline", colour="#6DBEA0", unit=" frames")
+    ):
 
-        front = front_from_frames(frames[i],
-                                  frames[i + 1],
-                                  threshold=threshold)
+        front = front_from_frames(frames[i], frames[i + 1], threshold=threshold)
 
-        front_next = front_from_frames(frames[i + 1],
-                                       frames[i + 2],
-                                       threshold=threshold)
+        front_next = front_from_frames(frames[i + 1], frames[i + 2], threshold=threshold)
 
         contours = contours_from_front(front, min_length=min_length)
         contours_next = contours_from_front(front_next, min_length=min_length)
@@ -98,8 +97,4 @@ def write_data(speeds: np.ndarray, result_path: str):
     header = "frame,contour,x_pos,y_pos,x_normal,y_normal,speed"
     # First four columns are integers, last three are floats with 3 decimal places.
     fmt = "%d", "%d", "%d", "%d", "%1.3f", "%1.3f", "%1.3f"
-    np.savetxt(result_path,
-               speeds,
-               fmt=fmt,
-               delimiter=",",
-               header=header)
+    np.savetxt(result_path, speeds, fmt=fmt, delimiter=",", header=header)

@@ -41,28 +41,34 @@ def main(arguments: argparse.Namespace) -> None:
         plot_vector_field(results, result_path_img)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        prog='PropaTrack',
-        description='Track the speed of self-propagating exothermic reactions in reactive multilayer foils.'
+        prog="PropaTrack",
+        description="Track the speed of self-propagating exothermic reactions in reactive multilayer foils.",
     )
 
-    parser.add_argument('video_path', help='Path to the raw video.')
-    parser.add_argument('result_dir', help='Directory to save the result.')
+    parser.add_argument("video_path", help="Path to the raw video.")
+    parser.add_argument("result_dir", help="Directory to save the result.")
 
-    parser.add_argument('-t',
-                        '--threshold',
-                        default=25,
-                        type=restricted_int,
-                        help='Minimum intensity for pixels to be considered part of the front. Default: 25.')
-    parser.add_argument('-l',
-                        '--min_length',
-                        default=5,
-                        help="Minimum length for contours to not be considered as noise. Default: 5.")
-    parser.add_argument('-s',
-                        '--show',
-                        action='store_true',
-                        help="Whether to show the vector field after running the pipeline.")
+    parser.add_argument(
+        "-t",
+        "--threshold",
+        default=25,
+        type=restricted_int,
+        help="Minimum intensity for pixels to be considered part of the front. Default: 25.",
+    )
+    parser.add_argument(
+        "-l",
+        "--min_length",
+        default=5,
+        help="Minimum length for contours to not be considered as noise. Default: 5.",
+    )
+    parser.add_argument(
+        "-s",
+        "--show",
+        action="store_true",
+        help="Whether to show the vector field after running the pipeline.",
+    )
 
     args = parser.parse_args()
 
