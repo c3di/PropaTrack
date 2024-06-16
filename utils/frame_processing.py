@@ -72,7 +72,7 @@ def front_from_frames(frame0: np.ndarray,
     return front
 
 
-def contours_from_front(front: np.ndarray, min_length: int = 25):
+def contours_from_front(front: np.ndarray, min_length: int = 25) -> list:
     """
     Extract contours from a reaction front.
 
@@ -138,6 +138,7 @@ def process_contour(contour: np.ndarray):
             #     ol = np.expand_dims(ol, axis=0)
             #     idx_ol = np.argmin(cdist(ol, contour))
             #     contour = np.insert(contour, idx_ol+1, ol, axis=0)
+
             contour = contour[:-(len(intra_dists) - idx_first_outlier)]
         else:
             contour_truncated = contour[:idx_first_outlier + 1]
@@ -189,6 +190,32 @@ def spline_from_contour(contour: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
 
     return spline, normals
 
+
+def dist_to_nearest(point: np.ndarray, contours_next: list[np.ndarray]) -> float:
+    """
+    Find the minimum distance from a point on a spline to the nearest contour in the next frame.
+
+    Parameters
+    ----------
+    contours_next : list[np.ndarray]
+        Contours in the next frame.
+
+    point : np.ndarray
+        Point on a spline given as [x, y].
+
+    Returns
+    -------
+    float
+        Distance to the nearest contour.
+    """
+    min_dist = np.inf
+    for contour_next in contours_next:
+        distances = cdist(np.expand_dims(point, axis=0), contour_next)
+        dist = np.min(distances)
+        if dist < min_dist:
+            min_dist = dist
+
+    return min_dist
 
 def two_opt(points, improvement_threshold):
     count = 0

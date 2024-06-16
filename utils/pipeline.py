@@ -1,10 +1,9 @@
 """Pipeline takes in a video or a set of frames and processes them to generate a vector field for reaction speed."""
 import numpy as np
 
-from scipy.spatial.distance import cdist
 from tqdm import tqdm
 
-from utils.frame_processing import front_from_frames, contours_from_front, process_contour, spline_from_contour
+from utils.frame_processing import front_from_frames, contours_from_front, process_contour, spline_from_contour, dist_to_nearest
 
 
 def pipeline(frames: np.ndarray,
@@ -41,13 +40,12 @@ def pipeline(frames: np.ndarray,
     frame_processing.contours_from_front : How contours are extracted.
     """
 
-    h, w = frames[0].shape
     Speeds = []
 
-    for i in tqdm(range(len(frames[:-2])),
-                  desc="Running image pipeline",
-                  colour="#6DBEA0",
-                  unit=" frames"):
+    for i, _ in enumerate(tqdm(frames[:-2],
+                               desc="Running image pipeline",
+                               colour="#6DBEA0",
+                               unit=" frames")):
 
         front = front_from_frames(frames[i],
                                   frames[i + 1],
@@ -68,16 +66,12 @@ def pipeline(frames: np.ndarray,
 
             spline, normals = spline_from_contour(contour)
 
-            for spline_point, spline_normal in zip(spline, normals):
-                # Distance can't be larger than image diagonal
-                min_dist = h ** 2 + w ** 2
-                for contour_next in contours_next:
-                    distances = cdist(np.expand_dims(spline_point, axis=0), contour_next)
-                    dist = np.min(distances)
-                    if dist < min_dist:
-                        min_dist = dist
+            for point, normal in zip(spline, normals):
 
-                Speeds.append([i, j, spline_point[0], spline_point[1], spline_normal[0], spline_normal[1], min_dist])
+                min_dist = dist_to_nearest(point, contours_next)
+
+                if min_dist < np.inf:
+                    Speeds.append([i, j, point[0], point[1], normal[0], normal[1], min_dist])
 
     return np.array(Speeds)
 

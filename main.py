@@ -13,6 +13,30 @@ def restricted_int(x):
     return x
 
 
+def get_paths(args: argparse.Namespace):
+    """Get the paths for the result files."""
+
+    # video_path.split("/")[-1] give the name of the video.
+    result_name = args.video_path.split("/")[-1].split(".")[0]
+    result_path_img = f"{args.result_dir}/vector_field_{result_name}.png"
+    result_path_txt = f"{args.result_dir}/{result_name}.txt"
+    return result_path_img, result_path_txt
+
+
+def main(args: argparse.Namespace) -> None:
+    """Main function to run the pipeline."""
+
+    result_path_img, result_path_txt = get_paths(args)
+
+    frames = get_video_frames(args.video_path)
+    results = pipeline(frames, args.threshold, args.min_length)
+    write_data(results, result_path_txt)
+
+    print(f"Successfully saved the vector field as a .txt file to {args.result_dir}.")
+    if args.show:
+        plot_vector_field(results, result_path_img)
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         prog='PropaTrack',
@@ -38,15 +62,4 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    video_path = args.video_path
-    # video_path.split("/")[-1] give the name of the video.
-    result_path = f"{args.result_dir}/vector_field_{video_path.split('/')[-1].split('.')[0]}"
-    result_path_img = result_path + ".png"
-    result_path_txt = result_path + ".txt"
-
-    frames = get_video_frames(video_path)
-    results = pipeline(frames, args.threshold, args.min_length)
-    write_data(results, result_path_txt)
-    print(f"Successfully saved the vector field as a .txt file to {result_path}.")
-    if args.show:
-        plot_vector_field(results, result_path_img)
+    main(args)

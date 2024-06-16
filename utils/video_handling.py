@@ -38,7 +38,8 @@ def get_video_frames(video_path: str, grayscale: bool = True) -> np.array:
     frames = np.array(frames)
     return frames
 
-def setup_experiment(video_name: str, result_path:str) -> Tuple[cv2.VideoWriter, np.ndarray]:
+
+def setup_experiment(video_name: str, result_path: str) -> Tuple[cv2.VideoWriter, np.ndarray]:
     """
     Setup the experiment by reading the video frames and creating a video writer object.
 
