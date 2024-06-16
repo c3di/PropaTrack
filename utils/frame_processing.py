@@ -10,8 +10,7 @@ from skimage import morphology
 
 def front_from_frames(frame0: np.ndarray,
                       frame1: np.ndarray,
-                      threshold: float = 35,
-                      version: str = "v2") -> np.ndarray:
+                      threshold: float = 25) -> np.ndarray:
     """
     Generate a denoised version of the reaction front from two frames.
     
@@ -26,9 +25,6 @@ def front_from_frames(frame0: np.ndarray,
     threshold : float
         Lower threshold for binarization. Set all pixel values below this threshold to 0.
 
-    version : str
-        Version of the processing pipeline.
-        
     Returns
     -------
     np.ndarray
@@ -42,25 +38,14 @@ def front_from_frames(frame0: np.ndarray,
 
     footprint = morphology.disk(3)
 
-    if version == "v1":
-        # Calculate the difference between two frames.
-        front = frame1 - frame0
-        front = front.astype(np.uint8)
+    # Threshold and binarize the images.
+    frame0[frame0 > threshold] = 255
+    frame0[frame0 < threshold] = 0
+    frame1[frame1 > threshold] = 255
+    frame1[frame1 < threshold] = 0
 
-        # Threshold and binarize the image.
-        front[front > 180] = 0
-        front[front < threshold] = 0
-        front[front > 0] = 255
-
-    elif version == "v2":
-        # Threshold and binarize the images.
-        frame0[frame0 > threshold] = 255
-        frame0[frame0 < threshold] = 0
-        frame1[frame1 > threshold] = 255
-        frame1[frame1 < threshold] = 0
-
-        # Calculate the difference between two frames.
-        front = frame1 - frame0
+    # Calculate the difference between two frames.
+    front = frame1 - frame0
 
     # Apply morphological opening.
     front = morphology.binary_opening(front, footprint)

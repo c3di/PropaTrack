@@ -1,4 +1,5 @@
 import argparse
+import os
 
 from utils.pipeline import pipeline, write_data
 from utils.video_handling import get_video_frames
@@ -13,27 +14,30 @@ def restricted_int(x):
     return x
 
 
-def get_paths(args: argparse.Namespace):
+def get_paths(arguments: argparse.Namespace):
     """Get the paths for the result files."""
 
+    # Make sure that the path has the correct format.
+    video_path = os.path.normpath(arguments.video_path)
+    print("video_path: ", video_path)
     # video_path.split("/")[-1] give the name of the video.
-    result_name = args.video_path.split("/")[-1].split(".")[0]
-    result_path_img = f"{args.result_dir}/vector_field_{result_name}.png"
-    result_path_txt = f"{args.result_dir}/{result_name}.txt"
+    result_name = video_path.split("\\")[-1].split(".")[0]
+    result_path_img = f"{arguments.result_dir}/vector_field_{result_name}.png"
+    result_path_txt = f"{arguments.result_dir}/{result_name}.txt"
     return result_path_img, result_path_txt
 
 
-def main(args: argparse.Namespace) -> None:
+def main(arguments: argparse.Namespace) -> None:
     """Main function to run the pipeline."""
 
-    result_path_img, result_path_txt = get_paths(args)
+    result_path_img, result_path_txt = get_paths(arguments)
 
-    frames = get_video_frames(args.video_path)
-    results = pipeline(frames, args.threshold, args.min_length)
+    frames = get_video_frames(arguments.video_path)
+    results = pipeline(frames, arguments.threshold, arguments.min_length)
     write_data(results, result_path_txt)
 
-    print(f"Successfully saved the vector field as a .txt file to {args.result_dir}.")
-    if args.show:
+    print(f"Successfully saved the vector field as a .txt file to {arguments.result_dir}.")
+    if arguments.show:
         plot_vector_field(results, result_path_img)
 
 

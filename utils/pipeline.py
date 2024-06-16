@@ -49,13 +49,11 @@ def pipeline(frames: np.ndarray,
 
         front = front_from_frames(frames[i],
                                   frames[i + 1],
-                                  threshold=threshold,
-                                  version="v2")
+                                  threshold=threshold)
 
         front_next = front_from_frames(frames[i + 1],
                                        frames[i + 2],
-                                       threshold=threshold,
-                                       version="v2")
+                                       threshold=threshold)
 
         contours = contours_from_front(front, min_length=min_length)
         contours_next = contours_from_front(front_next, min_length=min_length)
