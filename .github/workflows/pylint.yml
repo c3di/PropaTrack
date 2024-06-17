@@ -36,4 +36,4 @@ jobs:
 
     - name: Analysing the code with pylint
       run: |
-        poetry run pylint $(git ls-files '*.py') --fail-under 9.8
+        poetry run pylint $(git ls-files '*.py') --python-executable=$(poetry env info -p)/bin/python --fail-under 9.8
