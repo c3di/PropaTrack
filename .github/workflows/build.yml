@@ -4,10 +4,9 @@ on: [push, pull_request]
 
 jobs:
   build:
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: ["3.11"]
     steps:
     - uses: actions/checkout@v4
@@ -18,11 +17,7 @@ jobs:
 
     - name: Install Poetry
       run: |
-          if [ "${{ runner.os }}" = "Windows" ]; then
-            (Invoke-WebRequest -Uri https://install.python-poetry.org -UseBasicParsing).Content | python -
-          else
-            curl -sSL https://install.python-poetry.org | python3 -
-          fi
+          curl -sSL https://install.python-poetry.org | python3 
 
     # PyTorch is only needed to reproduce an experiment with RAFT in experiments.ipynb
     - name: Install dependencies
