@@ -33,4 +33,4 @@ jobs:
 
     - name: Analysing the code with pylint
       run: |
-        pylint $(git ls-files '*.py') --fail-under 9.8
+        poetry run pylint $(git ls-files '*.py') --fail-under 9.8
