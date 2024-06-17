@@ -3,9 +3,9 @@
 import argparse
 import os
 
-from utils.pipeline import pipeline, write_data
-from utils.video_handling import get_video_frames
-from utils.visualization import plot_vector_field
+from src.utils.pipeline import pipeline, write_data
+from src.utils.video_handling import get_video_frames
+from src.utils.visualization import plot_vector_field
 
 
 def restricted_int(x):
@@ -21,7 +21,6 @@ def get_paths(arguments: argparse.Namespace):
 
     # Make sure that the path has the correct format.
     video_path = os.path.normpath(arguments.video_path)
-    print("video_path: ", video_path)
     # video_path.split("/")[-1] give the name of the video.
     result_name = video_path.split("\\")[-1].split(".")[0]
     result_path_img = f"{arguments.result_dir}/vector_field_{result_name}.png"

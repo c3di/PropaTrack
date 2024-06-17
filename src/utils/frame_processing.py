@@ -191,10 +191,10 @@ def spline_from_contour(contour: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
 
     k = 1 if len(contour) < 10 else 3
 
-    t, c, k, u = interpolate.splprep([x, y], s=2, k=k)
-    spline = np.array(interpolate.splev(u, (t, c, k))).T
+    tck, u = interpolate.splprep([x, y], s=2, k=k)
+    spline = np.array(interpolate.splev(u, tck)).T
 
-    tangents = interpolate.splev(u, (t, c, k), der=1)
+    tangents = interpolate.splev(u, tck, der=1)
     normals = np.array([-tangents[1], tangents[0]]).T
     normals = normals / np.linalg.norm(normals, axis=1).reshape(-1, 1)
 

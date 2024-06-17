@@ -53,7 +53,7 @@ def clamp(x: float, minimum: float, maximum: float) -> float:
 def dist_to_idx(dist: float) -> int:
     """Map distance to an index for querying a colormap."""
     idx = 25.5 * dist - 153
-    return clamp(idx, 0, 255)
+    return int(clamp(idx, 0, 255))
 
 
 def plot_vector_field(results: np.ndarray, result_path: str) -> None:
@@ -74,8 +74,9 @@ def plot_vector_field(results: np.ndarray, result_path: str) -> None:
     """
 
     fig = plt.figure(dpi=400)
-
-    for result in tqdm(results, desc="Plotting vector field ", colour="#6DBEA0", unit=" vectors"):
+    for i, result in tqdm(
+        enumerate(results), desc="Plotting vector field ", colour="#6DBEA0", unit=" vectors"
+    ):
         x, y, nx, ny, speed = result[2:]
         plt.quiver(
             x,

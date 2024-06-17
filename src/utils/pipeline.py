@@ -6,7 +6,7 @@ to generate a vector field for reaction speed.
 import numpy as np
 from tqdm import tqdm
 
-from utils.frame_processing import (
+from src.utils.frame_processing import (
     contours_from_front,
     dist_to_nearest,
     front_from_frames,
