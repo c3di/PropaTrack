@@ -7,11 +7,11 @@ import numpy as np
 from tqdm import tqdm
 
 from utils.frame_processing import (
-    front_from_frames,
     contours_from_front,
+    dist_to_nearest,
+    front_from_frames,
     process_contour,
     spline_from_contour,
-    dist_to_nearest,
 )
 
 

@@ -1,22 +1,9 @@
 """Functionality for visualizing results and intermediate steps of the image pipeline."""
 
-import os.path
-
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
-from scipy.spatial.distance import cdist
 from tqdm import tqdm
-
-from utils.frame_processing import (
-    contours_from_front,
-    process_contour,
-    front_from_frames,
-    binarize,
-    spline_from_contour,
-    apply_morphology,
-)
-from utils.video_handling import get_video_frames
 
 IMG_DIR = "results/visualization"
 
@@ -27,111 +14,6 @@ def plot_simple(img: np.ndarray, title: str, img_dir: str, cmap: str = "gray") -
     plt.axis("off")
     plt.savefig(f"{img_dir}/{title}.png")
     plt.close()
-
-
-def plot_pipeline_steps(
-    video_path: str,
-    frame_idx0: int,
-    frame_idx1: int,
-    img_dir: str = IMG_DIR,
-) -> None:
-    """
-    Plot the pipeline steps for the reaction front detection.
-
-    Parameters
-    ----------
-    video_path : str
-        Path to the video file.
-    frame_idx0 : int
-        Index of the first frame.
-    frame_idx1 : int
-        Index of the second frame.
-    img_dir : str
-        Directory for saving the images. Default: IMG_DIR.
-    """
-    os.makedirs(img_dir, exist_ok=True)
-    cmap = plt.get_cmap("plasma")
-
-    frames = get_video_frames(video_path)
-
-    frame_1 = frames[frame_idx1]
-    frame_0 = frames[frame_idx0]
-
-    plot_simple(frame_0, f"frame_{frame_idx0}", img_dir)
-    plot_simple(frame_1, f"frame_{frame_idx1}", img_dir)
-
-    # Threshold and binarize the images.
-    binarize(frame_0, frame_1, 25)
-
-    plot_simple(frame_0, f"frame_{frame_idx0}_denoised", img_dir)
-    plot_simple(frame_1, f"frame_{frame_idx1}_denoised", img_dir)
-
-    # Calculate the difference between two frames.
-    front = frame_1 - frame_0
-
-    plot_simple(front, "front_difference", img_dir)
-
-    front = apply_morphology(front)
-
-    plot_simple(front, "front_morphological", img_dir)
-
-    h, w = front.shape
-    contour_canvas = np.zeros((h, w), dtype=np.uint8)
-    spline_canvas = np.zeros((h, w), dtype=np.uint8)
-    arrow_canvas = np.zeros((h, w), dtype=np.uint8)
-    contours = contours_from_front(front)
-
-    fig1, ax1 = plt.subplots()
-    fig2, ax2 = plt.subplots()
-    fig3, ax3 = plt.subplots()
-
-    ax1.imshow(contour_canvas, cmap="gray")
-    ax2.imshow(spline_canvas, cmap="gray")
-    ax3.imshow(arrow_canvas, cmap="gray")
-
-    # Need next front for arrow length calculation
-    front_next = front_from_frames(frames[frame_idx1], frames[frame_idx1 + 1])
-    contours_next = contours_from_front(front_next)
-
-    for j, contour in enumerate(contours):
-
-        min_dist = w**2 + h**2  # Distances can't be larger than image diagonal
-        for contour_next in contours_next:
-            distances = cdist(contour, contour_next)
-            dist = np.mean(np.min(distances, axis=0))
-            min_dist = min(min_dist, dist)
-
-        contour = process_contour(contour)
-
-        x = contour[:, 0]
-        y = contour[:, 1]
-
-        ax1.plot(x, y, color=cmap(j))
-
-        spline, normal = spline_from_contour(contour)
-
-        ax2.plot(spline[:, 0], spline[:, 1], color=cmap(j))
-        ax3.plot(spline[:, 0], spline[:, 1], color=cmap(j))
-
-        plt.quiver(
-            spline[1:-1, 0],
-            spline[1:-1, 1],
-            normal[1:-1, 0],
-            normal[1:-1, 1],
-            color=cmap(int(min_dist)),
-            angles="xy",
-            scale_units="xy",
-            scale=0.01,
-            width=0.001,
-        )
-
-    fig1.savefig(f"{img_dir}/contours.png")
-    fig2.savefig(f"{img_dir}/splines.png")
-    fig3.savefig(f"{img_dir}/arrows.png")
-
-    plt.close(fig1)
-    plt.close(fig2)
-    plt.close(fig3)
 
 
 DFKI_COLORS = np.array(
@@ -163,9 +45,15 @@ DFKI_COLORS = np.array(
 dfki_cmap = LinearSegmentedColormap.from_list("custom_cmap", DFKI_COLORS, N=256)
 
 
+def clamp(x: float, minimum: float, maximum: float) -> float:
+    """Clamp a value between a minimum and maximum."""
+    return max(minimum, min(x, maximum))
+
+
 def dist_to_idx(dist: float) -> int:
     """Map distance to an index for querying a colormap."""
-    return max(int(25.5 * dist - 153), 255)
+    idx = 25.5 * dist - 153
+    return clamp(idx, 0, 255)
 
 
 def plot_vector_field(results: np.ndarray, result_path: str) -> None:
