@@ -1,8 +1,10 @@
+"""Functionality for applying and visualizing the RAFT model."""
+
 import matplotlib.pyplot as plt
-import torchvision.transforms.functional as F
-import torchvision.transforms as T
 import numpy as np
 import torch
+import torchvision.transforms as T
+import torchvision.transforms.functional as F
 from torchvision.io import read_video
 
 plt.rcParams["savefig.bbox"] = "tight"
