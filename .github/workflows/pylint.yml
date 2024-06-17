@@ -27,7 +27,7 @@ jobs:
     - name: Install Pylint & PyTorch
       run: |
         python -m pip install --upgrade pip
-        pip install pylint
+        poetry run pip install pylint
         pip3 install torch torchvision --index-url https://download.pytorch.org/whl/cpu
 
     - name: List installed packages
@@ -36,4 +36,4 @@ jobs:
 
     - name: Analysing the code with pylint
       run: |
-        poetry run pylint $(git ls-files '*.py') --python-executable=$(poetry env info -p)/bin/python --fail-under 9.8
+        poetry run pylint $(git ls-files '*.py') --fail-under 9.8
