@@ -67,7 +67,7 @@ def pipeline(frames: np.ndarray, threshold: int = 25, min_length: int = 5) -> np
             spline, normals = spline_from_contour(contour)
 
             for point, normal in zip(spline, normals):
-                min_dist = dist_to_nearest(point, contours_next)
+                min_dist, _ = dist_to_nearest(point, contours_next)
 
                 speeds.append([i, j, point[0], point[1], normal[0], normal[1], min_dist])
 

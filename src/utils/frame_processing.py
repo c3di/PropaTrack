@@ -62,7 +62,7 @@ def front_from_frames(frame0: np.ndarray, frame1: np.ndarray, threshold: float =
     return front
 
 
-def contours_from_front(front: np.ndarray, min_length: int = 25) -> list:
+def contours_from_front(front: np.ndarray, min_length: int = 5) -> list:
     """
     Extract contours from a reaction front.
 
@@ -72,11 +72,11 @@ def contours_from_front(front: np.ndarray, min_length: int = 25) -> list:
         Reaction front.
 
     min_length : int
-        Minimum length of a contour.
+        Minimum length of a contour to be considered.
 
     Returns
     -------
-    np.ndarray
+    list
         Contours of the reaction front.
     """
 
@@ -108,7 +108,7 @@ def sample_contour(contour: np.ndarray) -> np.ndarray:
     return contour
 
 
-def find_outliers(contour: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+def find_outliers(contour: np.ndarray) -> np.ndarray:
     """
     Find indices of outliers in a contour.
 
@@ -119,46 +119,41 @@ def find_outliers(contour: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """
     intra_dists = np.diagonal(cdist(contour[:-1], contour[1:]))
     mean_dist = np.mean(intra_dists)
-    outlier_indices = np.where(intra_dists > 3 * mean_dist)[0]
-    return intra_dists, outlier_indices
+    (outlier_indices,) = np.where(intra_dists > 2 * mean_dist)
+    # Add 1 to get the index of the second point in the pair.
+    return outlier_indices + 1
+
+
+def handle_outliers(contour: np.ndarray) -> np.ndarray:
+    """
+    Handle outliers in a contour by removing them directly or reordering the contour.
+    """
+    outlier_indices = find_outliers(contour)
+
+    if outlier_indices.size > 0:
+        idx_first_outlier = outlier_indices[0]
+        if idx_first_outlier >= len(contour) - 2:
+            contour = contour[:idx_first_outlier]
+        else:
+            contour_truncated = contour[:idx_first_outlier]
+            idx_last_outlier = outlier_indices[-1]
+            contour_rest = contour[idx_last_outlier:]
+            contour_rest_rev = contour_rest[::-1]
+            contour = np.concatenate((contour_rest_rev, contour_truncated))
+
+    return contour
 
 
 def process_contour(contour: np.ndarray):
     """
-    Process a contour by removing duplicate points and outliers.
-
-    Parameters
-    ----------
-    contour : np.ndarray
-        Contour to be processed.
-
-    Returns
-    -------
-    np.ndarray
-        Processed contour.
+    Process a contour by removing duplicate points and outliers and downsampling.
     """
 
     contour = remove_duplicates(contour)
 
     contour = sample_contour(contour)
 
-    intra_dists, outlier_indices = find_outliers(contour)
-    if len(outlier_indices) >= 1:
-        idx_first_outlier = outlier_indices[0]
-        if idx_first_outlier >= len(intra_dists) - 3:
-            # outliers = contour[idx_first_outlier+1:]
-            # contour = contour[:idx_first_outlier]
-            # for ol in outliers:
-            #     ol = np.expand_dims(ol, axis=0)
-            #     idx_ol = np.argmin(cdist(ol, contour))
-            #     contour = np.insert(contour, idx_ol+1, ol, axis=0)
-
-            contour = contour[: -(len(intra_dists) - idx_first_outlier)]
-        else:
-            contour_truncated = contour[: idx_first_outlier + 1]
-            idx_last_outlier = outlier_indices[-1]
-            contour_rest = contour[idx_last_outlier + 1 :]
-            contour = np.concatenate((contour_rest[::-1], contour_truncated))
+    contour = handle_outliers(contour)
 
     return contour
 
@@ -201,17 +196,17 @@ def spline_from_contour(contour: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     return spline, normals
 
 
-def dist_to_nearest(point: np.ndarray, contours_next: list[np.ndarray]) -> float:
+def dist_to_nearest(point: np.ndarray, contours_next: list[np.ndarray]) -> Tuple[float, float]:
     """
     Find the minimum distance from a point on a spline to the nearest contour in the next frame.
 
     Parameters
     ----------
-    contours_next : list[np.ndarray]
-        Contours in the next frame.
-
     point : np.ndarray
         Point on a spline given as [x, y].
+
+    contours_next : list[np.ndarray]
+       List of all contours in the next frame.
 
     Returns
     -------
@@ -219,12 +214,14 @@ def dist_to_nearest(point: np.ndarray, contours_next: list[np.ndarray]) -> float
         Distance to the nearest contour.
     """
     min_dist = np.inf
-    for contour_next in contours_next:
+    idx_min = len(contours_next)
+    for idx, contour_next in enumerate(contours_next):
         distances = cdist(np.expand_dims(point, axis=0), contour_next)
         dist = np.min(distances)
         min_dist = min(min_dist, dist)
+        idx_min = idx
 
-    return min_dist
+    return min_dist, idx_min
 
 
 # def calculate_distance(points: np.ndarray) -> float:
@@ -253,3 +250,9 @@ def dist_to_nearest(point: np.ndarray, contours_next: list[np.ndarray]) -> float
 #             if count > improvement_threshold:
 #                 break
 #     return points
+# outliers = contour[idx_first_outlier+1:]
+# contour = contour[:idx_first_outlier]
+# for ol in outliers:
+#     ol = np.expand_dims(ol, axis=0)
+#     idx_ol = np.argmin(cdist(ol, contour))
+#     contour = np.insert(contour, idx_ol+1, ol, axis=0)
