@@ -108,27 +108,27 @@ def sample_contour(contour: np.ndarray) -> np.ndarray:
     return contour
 
 
-def find_outliers(contour: np.ndarray) -> np.ndarray:
+def find_outliers(contour: np.ndarray) -> Tuple[np.ndarray, float]:
     """
     Find indices of outliers in a contour.
 
     Notes
     -----
     An outlier is defined as a point with a distance to the next point
-    greater than 3 times the mean distance between all points.
+    greater than 2 times the mean distance between all points.
     """
     intra_dists = np.diagonal(cdist(contour[:-1], contour[1:]))
-    mean_dist = np.mean(intra_dists)
+    mean_dist = np.round(np.mean(intra_dists), 1)
     (outlier_indices,) = np.where(intra_dists > 2 * mean_dist)
     # Add 1 to get the index of the second point in the pair.
-    return outlier_indices + 1
+    return outlier_indices + 1, mean_dist
 
 
 def handle_outliers(contour: np.ndarray) -> np.ndarray:
     """
     Handle outliers in a contour by removing them directly or reordering the contour.
     """
-    outlier_indices = find_outliers(contour)
+    outlier_indices, mean_dist = find_outliers(contour)
 
     if outlier_indices.size > 0:
         idx_first_outlier = outlier_indices[0]
@@ -138,8 +138,11 @@ def handle_outliers(contour: np.ndarray) -> np.ndarray:
             contour_truncated = contour[:idx_first_outlier]
             idx_last_outlier = outlier_indices[-1]
             contour_rest = contour[idx_last_outlier:]
-            contour_rest_rev = contour_rest[::-1]
-            contour = np.concatenate((contour_rest_rev, contour_truncated))
+            if np.linalg.norm(contour_rest[0] - contour_truncated[0]) <= 2 * mean_dist:
+                contour_rest_rev = contour_rest[::-1]
+                contour = np.concatenate((contour_rest_rev, contour_truncated))
+            else:
+                contour = contour_truncated
 
     return contour
 
