@@ -9,12 +9,10 @@ from scipy.spatial.distance import cdist
 from skimage import morphology
 
 
-def binarize(frame0: np.ndarray, frame1: np.ndarray, threshold: float) -> None:
+def binarize(frame: np.ndarray, threshold: float = 25) -> None:
     """Binarize the frames by setting all pixel values below a threshold to 0."""
-    frame0[frame0 > threshold] = 255
-    frame0[frame0 < threshold] = 0
-    frame1[frame1 > threshold] = 255
-    frame1[frame1 < threshold] = 0
+    frame[frame > threshold] = 255
+    frame[frame < threshold] = 0
 
 
 def apply_morphology(front: np.ndarray) -> np.ndarray:
@@ -27,7 +25,7 @@ def apply_morphology(front: np.ndarray) -> np.ndarray:
     return front
 
 
-def front_from_frames(frame0: np.ndarray, frame1: np.ndarray, threshold: float = 25) -> np.ndarray:
+def front_from_frames(frame0: np.ndarray, frame1: np.ndarray, threshold: float) -> np.ndarray:
     """
     Generate a denoised version of the reaction front from two frames.
 
@@ -53,7 +51,8 @@ def front_from_frames(frame0: np.ndarray, frame1: np.ndarray, threshold: float =
     https://scikit-image.org/docs/stable/auto_examples/applications/plot_morphology.html
     """
 
-    binarize(frame0, frame1, threshold)
+    binarize(frame0, threshold)
+    binarize(frame1, threshold)
 
     front = frame1 - frame0
 
@@ -147,7 +146,7 @@ def handle_outliers(contour: np.ndarray) -> np.ndarray:
     return contour
 
 
-def process_contour(contour: np.ndarray):
+def process_contour(contour: np.ndarray) -> np.ndarray:
     """
     Process a contour by removing duplicate points and outliers and downsampling.
     """
@@ -225,37 +224,3 @@ def dist_to_nearest(point: np.ndarray, contours_next: list[np.ndarray]) -> Tuple
         idx_min = idx
 
     return min_dist, idx_min
-
-
-# def calculate_distance(points: np.ndarray) -> float:
-#     return sum(np.linalg.norm(points[i] - points[i - 1]) for i in range(1, len(points)))
-#
-#
-# def two_opt(points, improvement_threshold):
-#     count = 0
-#     while True:
-#         count += 1
-#         distance = calculate_distance(points)
-#         for i in range(len(points) - 1):
-#             for j in range(i + 2, len(points)):
-#                 if j - i == 1:
-#                     continue
-#                 new_points = points[:]
-#                 new_points[i:j] = points[i:j][::-1]
-#                 new_distance = calculate_distance(new_points)
-#                 if new_distance < distance:
-#                     points = new_points
-#                     break
-#             else:
-#                 continue
-#             break
-#         else:
-#             if count > improvement_threshold:
-#                 break
-#     return points
-# outliers = contour[idx_first_outlier+1:]
-# contour = contour[:idx_first_outlier]
-# for ol in outliers:
-#     ol = np.expand_dims(ol, axis=0)
-#     idx_ol = np.argmin(cdist(ol, contour))
-#     contour = np.insert(contour, idx_ol+1, ol, axis=0)
