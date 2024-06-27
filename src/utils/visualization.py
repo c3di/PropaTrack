@@ -12,7 +12,7 @@ def plot_simple(img: np.ndarray, title: str, img_dir: str, cmap: str = "gray") -
     """Plot a single image."""
     plt.imshow(img, cmap=cmap)
     plt.axis("off")
-    plt.savefig(f"{img_dir}/{title}.png")
+    plt.savefig(f"{img_dir}/{title}.png", dpi=400)
     plt.close()
 
 
