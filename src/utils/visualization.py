@@ -8,11 +8,21 @@ from tqdm import tqdm
 IMG_DIR = "results/visualization"
 
 
-def plot_simple(img: np.ndarray, title: str, img_dir: str, cmap: str = "gray") -> None:
+def plot_simple(img: np.ndarray, title: str, img_dir) -> None:
     """Plot a single image."""
-    plt.imshow(img, cmap=cmap)
+    plt.imshow(img, cmap="gray")
     plt.axis("off")
     plt.savefig(f"{img_dir}/{title}.png", dpi=400)
+    plt.close()
+
+
+def plot_contour(contour: np.ndarray, canvas: np.ndarray, title: str, img_dir: str) -> None:
+    """Plot a single contour."""
+    fig, axis = plt.subplots()
+    axis.imshow(canvas, cmap="gray")
+    axis.plot(contour[:, 0], contour[:, 1], color="red")
+    plt.axis("off")
+    fig.savefig(f"{img_dir}/{title}.png", dpi=400)
     plt.close()
 
 
@@ -76,6 +86,8 @@ def plot_vector_field(results: np.ndarray, result_path: str) -> None:
     fig = plt.figure(dpi=400)
     for result in tqdm(results, desc="Plotting vector field ", colour="#6DBEA0", unit=" vectors"):
         x, y, nx, ny, speed = result[2:]
+        if speed > 15:
+            continue
         plt.quiver(
             x,
             y,

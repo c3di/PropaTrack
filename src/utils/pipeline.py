@@ -51,13 +51,13 @@ def pipeline(frames: np.ndarray, threshold: int = 25, min_length: int = 5) -> np
     speeds = []
 
     for i, _ in enumerate(
-        tqdm(frames[:-2], desc="Running image pipeline", colour="#6DBEA0", unit=" frames")
+        tqdm(frames[1:-2], desc="Running image pipeline", colour="#6DBEA0", unit=" frames")
     ):
 
-        front = front_from_frames(frames[i], frames[i + 1], threshold=threshold)
+        front = front_from_frames(frames[i - 1], frames[i], frames[i + 1], threshold=threshold)
         contours = contours_from_front(front, min_length=min_length)
 
-        front = front_from_frames(frames[i + 1], frames[i + 2], threshold=threshold)
+        front = front_from_frames(frames[i], frames[i + 1], frames[i + 2], threshold=threshold)
         contours_next = contours_from_front(front, min_length=min_length)
 
         for j, contour in enumerate(contours):
@@ -97,5 +97,5 @@ def write_data(speeds: np.ndarray, result_path: str):
     """
     header = "frame,contour,x_pos,y_pos,x_normal,y_normal,speed"
     # First four columns are integers, last three are floats with 3 decimal places.
-    fmt = "%d", "%d", "%d", "%d", "%1.3f", "%1.3f", "%1.3f"
+    fmt = "%d %d %d %d %1.3f %1.3f %1.3f"
     np.savetxt(result_path, speeds, fmt=fmt, delimiter=",", header=header)

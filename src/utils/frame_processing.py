@@ -4,9 +4,14 @@ from typing import Tuple
 
 import cv2
 import numpy as np
-from scipy import interpolate
+from scipy import interpolate, signal
 from scipy.spatial.distance import cdist
 from skimage import morphology
+
+EDGE_KERNEL = np.array([[0, 1, 0], [1, 0, -1], [0, -1, 0]])
+
+DISK_1 = morphology.disk(1)
+DISK_3 = morphology.disk(3)
 
 
 def binarize(frame: np.ndarray, threshold: float = 25) -> None:
@@ -17,15 +22,27 @@ def binarize(frame: np.ndarray, threshold: float = 25) -> None:
 
 def apply_morphology(front: np.ndarray) -> np.ndarray:
     """Apply morphological operations to the reaction front."""
-    footprint = morphology.disk(3)
-    front = morphology.binary_opening(front, footprint)
+
+    front = morphology.closing(front, DISK_3)
     front = morphology.skeletonize(front)
-    # Convert to uint8 for compatibility with other functions.
+
     front = np.where(front == 1, 255, 0).astype(np.uint8)
+
     return front
 
 
-def front_from_frames(frame0: np.ndarray, frame1: np.ndarray, threshold: float) -> np.ndarray:
+def edges_from_frame(frame: np.ndarray) -> np.ndarray:
+    """Extract edges from a binarized frame using a simple derivative filter."""
+    edges = np.abs(signal.convolve2d(frame, EDGE_KERNEL, mode="same", boundary="symm")).astype(
+        np.uint8
+    )
+    binarize(edges)
+    return edges
+
+
+def front_from_frames(
+    frame0: np.ndarray, frame1: np.ndarray, frame2: np.ndarray, threshold: float = 25
+) -> np.ndarray:
     """
     Generate a denoised version of the reaction front from two frames.
 
@@ -53,8 +70,19 @@ def front_from_frames(frame0: np.ndarray, frame1: np.ndarray, threshold: float) 
 
     binarize(frame0, threshold)
     binarize(frame1, threshold)
+    binarize(frame2, threshold)
 
-    front = frame1 - frame0
+    edges0 = edges_from_frame(frame0)
+    edges1 = edges_from_frame(frame1)
+    edges2 = edges_from_frame(frame2)
+
+    disk = DISK_1
+    edges0 = cv2.dilate(edges0, disk, iterations=3)
+    edges2 = cv2.dilate(edges2, disk, iterations=3)
+
+    front = edges1 - edges0 - edges2
+    front[front != 255] = 0
+    front = front.astype(np.uint8)
 
     front = apply_morphology(front)
 

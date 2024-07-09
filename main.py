@@ -46,7 +46,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         prog="PropaTrack",
         description="Track the speed of self-propagating"
-        "exothermic reactions in reactive multilayer foils.",
+        " exothermic reactions in reactive multilayer foils.",
     )
 
     parser.add_argument("video_path", help="Path to the raw video.")
