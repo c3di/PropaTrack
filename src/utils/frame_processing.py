@@ -225,7 +225,7 @@ def _handle_outliers(contour: np.ndarray) -> np.ndarray:
     """
     outlier_indices, mean_dist = _find_outliers(contour)
 
-    if outlier_indices:
+    if outlier_indices.size > 0:
         idx_first_outlier = outlier_indices[0]
         if idx_first_outlier >= len(contour) - 2:
             contour = contour[:idx_first_outlier]
