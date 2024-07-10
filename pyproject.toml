@@ -1,8 +1,7 @@
 [tool.poetry]
 name = "propatrack"
 version = "0.1.0"
-description = "Tool to track the speed of self-propagating reactions
-               on reactive multilayer foils."
+description = "Tool to track the speed of self-propagating reactions on reactive multilayer foils."
 authors = ["Christian Singer <christiansinger09@gmail.com>"]
 readme = "README.md"
 
