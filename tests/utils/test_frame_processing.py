@@ -4,23 +4,23 @@ from unittest import TestCase
 
 import numpy as np
 
-from src.utils.frame_processing import find_outliers, handle_outliers
+from src.utils.frame_processing import _find_outliers, _handle_outliers
 
 
 class TestFindOutliers(TestCase):
-    """Test find_outliers function."""
+    """Test _find_outliers function."""
 
     def test_find_outliers_no_outlier(self):
         """Test that no outliers are found."""
         contour = np.array([[8, 1], [8, 2], [8, 3], [9, 3], [9, 4], [9, 5]])
-        outlier_indices, mean_dist = find_outliers(contour)
+        outlier_indices, mean_dist = _find_outliers(contour)
         self.assertEqual(outlier_indices.size, 0)
         self.assertEqual(mean_dist, 1.0)
 
     def test_find_outliers_end(self):
         """Test that an outlier at the end of the contour is found."""
         contour = np.array([[8, 1], [8, 2], [8, 3], [9, 3], [9, 4], [14, 8]])
-        outlier_indices, mean_dist = find_outliers(contour)
+        outlier_indices, mean_dist = _find_outliers(contour)
         self.assertEqual(outlier_indices.size, 1)
         self.assertEqual(outlier_indices[0], 5.0)
         self.assertEqual(mean_dist, 2.1)
@@ -28,31 +28,31 @@ class TestFindOutliers(TestCase):
     def test_find_outliers_middle(self):
         """Test that an outlier in the middle of the contour is found."""
         contour = np.array([[8, 1], [8, 2], [13, 7], [9, 3], [9, 4], [9, 5]])
-        outlier_indices, mean_dist = find_outliers(contour)
+        outlier_indices, mean_dist = _find_outliers(contour)
         self.assertEqual(outlier_indices.size, 1)
         self.assertEqual(outlier_indices[0], 2.0)
         self.assertEqual(mean_dist, 3.1)
 
 
 class TestHandleOutliers(TestCase):
-    """Test function handle_outliers."""
+    """Test function _handle_outliers."""
 
     def test_handle_outliers_none(self):
         """Test that no point is removed when no outlier is present."""
         contour = np.array([[8, 1], [8, 2], [8, 3], [9, 3], [9, 4], [9, 5]])
-        contour_filtered = handle_outliers(contour)
+        contour_filtered = _handle_outliers(contour)
         self.assertTrue(np.array_equal(contour, contour_filtered))
 
     def test_handle_outliers_end(self):
         """Test that the last point is removed."""
         contour = np.array([[8, 1], [8, 2], [8, 3], [9, 3], [9, 4], [14, 8]])
-        contour_filtered = handle_outliers(contour)
+        contour_filtered = _handle_outliers(contour)
         self.assertTrue(np.array_equal(contour[:-1], contour_filtered))
 
     def test_handle_outliers_end_prev(self):
         """Test that the last two points are removed."""
         contour = np.array([[8, 1], [8, 2], [8, 3], [9, 3], [14, 7], [14, 8]])
-        contour_filtered = handle_outliers(contour)
+        contour_filtered = _handle_outliers(contour)
         self.assertTrue(np.array_equal(contour[:-2], contour_filtered))
 
     def test_handle_outliers_middle(self):
@@ -80,7 +80,7 @@ class TestHandleOutliers(TestCase):
                 [649, 452],
             ]
         )
-        contour_filtered = handle_outliers(contour)
+        contour_filtered = _handle_outliers(contour)
         contour_expected = np.array(
             [
                 [649, 452],
@@ -195,5 +195,5 @@ class TestHandleOutliers(TestCase):
                 [135, 673],
             ]
         )
-        contour_filtered = handle_outliers(contour)
+        contour_filtered = _handle_outliers(contour)
         self.assertTrue(np.array_equal(contour_filtered, contour_expected))

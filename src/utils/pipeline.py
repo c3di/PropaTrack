@@ -10,7 +10,6 @@ from src.utils.frame_processing import (
     contours_from_front,
     dist_to_nearest,
     front_from_frames,
-    process_contour,
     spline_from_contour,
 )
 
@@ -61,8 +60,6 @@ def pipeline(frames: np.ndarray, threshold: int = 25, min_length: int = 5) -> np
         contours_next = contours_from_front(front, min_length=min_length)
 
         for j, contour in enumerate(contours):
-
-            contour = process_contour(contour)
 
             spline, normals = spline_from_contour(contour)
 
