@@ -140,7 +140,7 @@ def dist_to_nearest(point: np.ndarray, contours_next: list[np.ndarray]) -> Tuple
     """
     min_dist = np.inf
     idx_min = -1
-    sign_x = 0
+    sign = 0
     for idx, contour_next in enumerate(contours_next):
         distances = cdist(np.expand_dims(point, axis=0), contour_next)
         dist_idx = np.argmin(distances)
@@ -148,9 +148,11 @@ def dist_to_nearest(point: np.ndarray, contours_next: list[np.ndarray]) -> Tuple
         if dist < min_dist:
             min_dist = dist
             idx_min = idx
-            sign_x = np.sign(contour_next[dist_idx, 0] - point[0])
+            vec_next = contour_next[dist_idx] - point
+            max_mag_idx = np.argmax(np.abs(vec_next))
+            sign = np.sign(vec_next[max_mag_idx])
 
-    return min_dist, idx_min, sign_x
+    return min_dist, idx_min, sign
 
 
 def _binarize(frame: np.ndarray, threshold: float = 25) -> None:
@@ -200,7 +202,7 @@ def _remove_duplicates(contour: np.ndarray) -> np.ndarray:
 
 def _sample_contour(contour: np.ndarray) -> np.ndarray:
     """Sample the contour to get evenly spaced points."""
-    length_per_arrow = 35
+    length_per_arrow = 15
     num_arrows = cv2.arcLength(contour, False) / length_per_arrow + 1
     steps = max(int(len(contour) / num_arrows), 1)
     if (len(contour) - 1) % steps == 0:
@@ -264,10 +266,10 @@ def _process_contour(contour: np.ndarray) -> np.ndarray:
     return contour
 
 
-def _orient_normal(normal: np.ndarray, sign_x: int) -> np.ndarray:
+def _orient_normal(normal: np.ndarray, sign: int) -> np.ndarray:
     """
     Orient the normal based on the sign of the x-component of the normal.
     """
-    if np.sign(normal[0]) != sign_x:
+    if np.sign(normal[np.argmax(np.abs(normal))]) != sign:
         normal = -normal
     return normal

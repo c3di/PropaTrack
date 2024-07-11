@@ -7,6 +7,7 @@ import numpy as np
 from tqdm import tqdm
 
 from src.utils.frame_processing import (
+    _orient_normal,
     contours_from_front,
     dist_to_nearest,
     front_from_frames,
@@ -64,8 +65,8 @@ def pipeline(frames: np.ndarray, threshold: int = 25, min_length: int = 5) -> np
             spline, normals = spline_from_contour(contour)
 
             for point, normal in zip(spline, normals):
-                min_dist, _ = dist_to_nearest(point, contours_next)
-
+                min_dist, _, sign_x = dist_to_nearest(point, contours_next)
+                normal = _orient_normal(normal, sign_x)
                 speeds.append([i, j, point[0], point[1], normal[0], normal[1], min_dist])
 
     return np.array(speeds)
