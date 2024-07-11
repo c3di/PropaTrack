@@ -51,3 +51,8 @@ class Documenter:
         time = strftime("%H:%M:%S", gmtime())
         with open(self.file_path, "a", encoding="utf-8") as file:
             file.write(f"{time}: {info}\n")
+
+    def newline(self) -> None:
+        """Add a newline to the experiment protocol."""
+        with open(self.file_path, "a", encoding="utf-8") as file:
+            file.write("\n")
