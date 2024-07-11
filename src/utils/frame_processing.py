@@ -18,15 +18,13 @@ def front_from_frames(
     frame0: np.ndarray, frame1: np.ndarray, frame2: np.ndarray, threshold: float = 25
 ) -> np.ndarray:
     """
-    Generate a denoised version of the reaction front from two frames.
+    Generate a denoised version of the reaction front from three frames.
+    Front is located on frame1.
 
     Parameters
     ----------
-    frame0 : np.ndarray
-        First video frame.
-
-    frame1 : np.ndarray
-        Second video frame.
+    frame0, frame1, frame2 : np.ndarray
+        Video frame.
 
     threshold : float
         Lower threshold for binarization. Set all pixel values below this threshold to 0.
@@ -50,13 +48,7 @@ def front_from_frames(
     edges1 = _edges_from_frame(frame1)
     edges2 = _edges_from_frame(frame2)
 
-    disk = DISK_1
-    edges0 = cv2.dilate(edges0, disk, iterations=3)
-    edges2 = cv2.dilate(edges2, disk, iterations=3)
-
-    front = edges1 - edges0 - edges2
-    front[front != 255] = 0
-    front = front.astype(np.uint8)
+    front = _front_from_edges(edges0, edges1, edges2)
 
     front = _apply_morphology(front)
 
@@ -129,7 +121,7 @@ def spline_from_contour(contour: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     return spline, normals
 
 
-def dist_to_nearest(point: np.ndarray, contours_next: list[np.ndarray]) -> Tuple[float, float]:
+def dist_to_nearest(point: np.ndarray, contours_next: list[np.ndarray]) -> Tuple[float, int, int]:
     """
     Find the minimum distance from a point on a spline to the nearest contour in the next frame.
 
@@ -143,18 +135,22 @@ def dist_to_nearest(point: np.ndarray, contours_next: list[np.ndarray]) -> Tuple
 
     Returns
     -------
-    float
-        Distance to the nearest contour.
+    Tuple[float, float, int]
+
     """
     min_dist = np.inf
-    idx_min = len(contours_next)
+    idx_min = -1
+    sign_x = 0
     for idx, contour_next in enumerate(contours_next):
         distances = cdist(np.expand_dims(point, axis=0), contour_next)
-        dist = np.min(distances)
-        min_dist = min(min_dist, dist)
-        idx_min = idx
+        dist_idx = np.argmin(distances)
+        dist = distances[0, dist_idx]
+        if dist < min_dist:
+            min_dist = dist
+            idx_min = idx
+            sign_x = np.sign(contour_next[dist_idx, 0] - point[0])
 
-    return min_dist, idx_min
+    return min_dist, idx_min, sign_x
 
 
 def _binarize(frame: np.ndarray, threshold: float = 25) -> None:
@@ -170,6 +166,18 @@ def _edges_from_frame(frame: np.ndarray) -> np.ndarray:
     )
     _binarize(edges)
     return edges
+
+
+def _front_from_edges(edges0: np.ndarray, edges1: np.ndarray, edges2: np.ndarray) -> np.ndarray:
+    """
+    Get the reaction front from the edges detected in three frames.
+    Front is located in the frame corresponding to edges1.
+    """
+    edges0 = cv2.dilate(edges0, DISK_1, iterations=3)
+    edges2 = cv2.dilate(edges2, DISK_1, iterations=3)
+    front = edges1 - edges0 - edges2
+    front[front != 255] = 0
+    return front
 
 
 def _apply_morphology(front: np.ndarray) -> np.ndarray:
@@ -254,3 +262,12 @@ def _process_contour(contour: np.ndarray) -> np.ndarray:
     contour = _handle_outliers(contour)
 
     return contour
+
+
+def _orient_normal(normal: np.ndarray, sign_x: int) -> np.ndarray:
+    """
+    Orient the normal based on the sign of the x-component of the normal.
+    """
+    if np.sign(normal[0]) != sign_x:
+        normal = -normal
+    return normal
