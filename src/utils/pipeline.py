@@ -7,15 +7,16 @@ import numpy as np
 from tqdm import tqdm
 
 from src.utils.frame_processing import (
-    _orient_normal,
     contours_from_front,
-    dist_to_nearest,
     front_from_frames,
-    spline_from_contour,
+    nearest_point,
+    process_contour,
 )
 
 
-def pipeline(frames: np.ndarray, threshold: int = 25, min_length: int = 5) -> np.ndarray:
+def pipeline(
+    frames: np.ndarray, threshold: int = 25, min_length: int = 5, sampling_factor: int = 35
+) -> np.ndarray:
     """
     Process the frames to generate a vector field indicating the reaction speed
     at evenly spread points for each frame.
@@ -62,12 +63,21 @@ def pipeline(frames: np.ndarray, threshold: int = 25, min_length: int = 5) -> np
 
         for j, contour in enumerate(contours):
 
-            spline, normals = spline_from_contour(contour)
+            contour = process_contour(contour, sampling_factor)
 
-            for point, normal in zip(spline, normals):
-                min_dist, _, sign_x = dist_to_nearest(point, contours_next)
-                normal = _orient_normal(normal, sign_x)
-                speeds.append([i, j, point[0], point[1], normal[0], normal[1], min_dist])
+            for point in contour:
+                p_nearest = nearest_point(point, contours_next)
+
+                if p_nearest is None:
+                    continue
+
+                vec_to_next = p_nearest - point
+                dist_to_next = np.linalg.norm(vec_to_next)
+                vec_to_next = vec_to_next / dist_to_next
+
+                speeds.append(
+                    [i, j, point[0], point[1], vec_to_next[0], vec_to_next[1], dist_to_next]
+                )
 
     return np.array(speeds)
 

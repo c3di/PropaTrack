@@ -1,10 +1,8 @@
 """Module contains utils for processing video frames with skimage and numpy."""
 
-from typing import Tuple
-
 import cv2
 import numpy as np
-from scipy import interpolate, signal
+from scipy import signal
 from scipy.spatial.distance import cdist
 from skimage import morphology
 
@@ -81,78 +79,35 @@ def contours_from_front(front: np.ndarray, min_length: int = 5) -> list:
     return contours
 
 
-def spline_from_contour(contour: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+def process_contour(contour: np.ndarray, sampling_factor: int) -> np.ndarray:
     """
-    Fit spline to contour and calculate normals.
-
-    Parameters
-    ----------
-    contour : np.ndarray
-        preprocessed contour.
-
-    Returns
-    -------
-    Tuple[np.ndarray, np.ndarray]
-        Tuple containing the spline and the normals.
-
-    Notes
-    -----
-    It is advised but not necessary to preprocess the contour before applying this function.
-
-    See Also
-    --------
-    _process_contour: A function to preprocess the contour.
+    Process a contour by removing duplicate points and outliers and downsampling.
     """
 
-    contour = _process_contour(contour)
+    contour = _remove_duplicates(contour)
 
-    x = contour[:, 0]
-    y = contour[:, 1]
+    contour = _sample_contour(contour, sampling_factor)
 
-    k = 1 if len(contour) < 10 else 3
-
-    tck, u = interpolate.splprep([x, y], s=2, k=k)
-    spline = np.array(interpolate.splev(u, tck)).T
-
-    tangents = interpolate.splev(u, tck, der=1)
-    normals = np.array([-tangents[1], tangents[0]]).T
-    normals = normals / np.linalg.norm(normals, axis=1).reshape(-1, 1)
-
-    return spline, normals
+    return contour
 
 
-def dist_to_nearest(point: np.ndarray, contours_next: list[np.ndarray]) -> Tuple[float, int, int]:
-    """
-    Find the minimum distance from a point on a spline to the nearest contour in the next frame.
-
-    Parameters
-    ----------
-    point : np.ndarray
-        Point on a spline given as [x, y].
-
-    contours_next : list[np.ndarray]
-       List of all contours in the next frame.
-
-    Returns
-    -------
-    Tuple[float, float, int]
-
-    """
-    min_dist = np.inf
-    idx_min = -1
-    sign = 0
-    for idx, contour_next in enumerate(contours_next):
-        distances = cdist(np.expand_dims(point, axis=0), contour_next)
-        dist_idx = np.argmin(distances)
-        dist = distances[0, dist_idx]
-        if dist < min_dist:
-            min_dist = dist
-            idx_min = idx
-            vec_next = contour_next[dist_idx] - point
-            max_mag_idx = np.argmax(np.abs(vec_next))
-            sign = np.sign(vec_next[max_mag_idx])
-
-    return min_dist, idx_min, sign
+def nearest_point(point: np.ndarray, contours: list[np.ndarray]) -> np.ndarray | None:
+    """Find the nearest point on a list of contours to a given point."""
+    if contours:
+        idx_contour = 0
+        idx_point = 0
+        min_dist = np.inf
+        for idx, contour in enumerate(contours):
+            distances = cdist(np.expand_dims(point, axis=0), contour)
+            dist_idx = np.argmin(distances)
+            dist = distances[0, dist_idx]
+            if dist < min_dist:
+                min_dist = dist
+                idx_contour = idx
+                idx_point = dist_idx
+        point = contours[idx_contour][idx_point]
+        return point
+    return None
 
 
 def _binarize(frame: np.ndarray, threshold: float = 25) -> None:
@@ -200,10 +155,9 @@ def _remove_duplicates(contour: np.ndarray) -> np.ndarray:
     return contour
 
 
-def _sample_contour(contour: np.ndarray) -> np.ndarray:
+def _sample_contour(contour: np.ndarray, sampling_factor: int) -> np.ndarray:
     """Sample the contour to get evenly spaced points."""
-    length_per_arrow = 15
-    num_arrows = cv2.arcLength(contour, False) / length_per_arrow + 1
+    num_arrows = cv2.arcLength(contour, False) / sampling_factor + 1
     steps = max(int(len(contour) / num_arrows), 1)
     if (len(contour) - 1) % steps == 0:
         contour = contour[::steps]
@@ -211,65 +165,3 @@ def _sample_contour(contour: np.ndarray) -> np.ndarray:
         # Make sure the last point is included, so contours don't get cut off.
         contour = np.append(contour[::steps], contour[-1:], axis=0)
     return contour
-
-
-def _find_outliers(contour: np.ndarray) -> Tuple[np.ndarray, float]:
-    """
-    Find indices of outliers in a contour.
-
-    Notes
-    -----
-    An outlier is defined as a point with a distance to the next point
-    greater than 2 times the mean distance between all points.
-    """
-    intra_dists = np.diagonal(cdist(contour[:-1], contour[1:]))
-    mean_dist = np.round(np.mean(intra_dists), 1)
-    (outlier_indices,) = np.where(intra_dists > 2 * mean_dist)
-    # Add 1 to get the index of the second point in the pair.
-    return outlier_indices + 1, mean_dist
-
-
-def _handle_outliers(contour: np.ndarray) -> np.ndarray:
-    """
-    Handle outliers in a contour by removing them directly or reordering the contour.
-    """
-    outlier_indices, mean_dist = _find_outliers(contour)
-
-    if outlier_indices.size > 0:
-        idx_first_outlier = outlier_indices[0]
-        if idx_first_outlier >= len(contour) - 2:
-            contour = contour[:idx_first_outlier]
-        else:
-            contour_truncated = contour[:idx_first_outlier]
-            idx_last_outlier = outlier_indices[-1]
-            contour_rest = contour[idx_last_outlier:]
-            if np.linalg.norm(contour_rest[0] - contour_truncated[0]) <= 2 * mean_dist:
-                contour_rest_rev = contour_rest[::-1]
-                contour = np.concatenate((contour_rest_rev, contour_truncated))
-            else:
-                contour = contour_truncated
-
-    return contour
-
-
-def _process_contour(contour: np.ndarray) -> np.ndarray:
-    """
-    Process a contour by removing duplicate points and outliers and downsampling.
-    """
-
-    contour = _remove_duplicates(contour)
-
-    contour = _sample_contour(contour)
-
-    contour = _handle_outliers(contour)
-
-    return contour
-
-
-def _orient_normal(normal: np.ndarray, sign: int) -> np.ndarray:
-    """
-    Orient the normal based on the sign of the x-component of the normal.
-    """
-    if np.sign(normal[np.argmax(np.abs(normal))]) != sign:
-        normal = -normal
-    return normal
