@@ -53,7 +53,7 @@ def front_from_frames(
     return front
 
 
-def contours_from_front(front: np.ndarray, min_length: int = 5) -> list:
+def contours_from_front(front: np.ndarray, min_length: int = 5) -> list[np.ndarray]:
     """
     Extract contours from a reaction front.
 
@@ -82,6 +82,20 @@ def contours_from_front(front: np.ndarray, min_length: int = 5) -> list:
 def process_contour(contour: np.ndarray, sampling_factor: int) -> np.ndarray:
     """
     Process a contour by removing duplicate points and outliers and downsampling.
+
+    Parameters
+    ----------
+    contour : np.ndarray
+        Contour to be processed.
+
+    sampling_factor : int
+        Factor by which the contour is downsampled. In range [1, infinity].
+        The higher the factor, the more points are removed.
+
+    Returns
+    -------
+    np.ndarray
+        Processed contour.
     """
 
     contour = _remove_duplicates(contour)
@@ -92,7 +106,22 @@ def process_contour(contour: np.ndarray, sampling_factor: int) -> np.ndarray:
 
 
 def nearest_point(point: np.ndarray, contours: list[np.ndarray]) -> np.ndarray | None:
-    """Find the nearest point on a list of contours to a given point."""
+    """
+    Find the nearest point on a list of contours to a given point.
+
+    Parameters
+    ----------
+    point : np.ndarray
+        Point to find the nearest point to.
+
+    contours : list[np.ndarray]
+        List of contours.
+
+    Returns
+    -------
+    np.ndarray
+        Nearest point to point on any of the contours.
+    """
     if contours:
         idx_contour = 0
         idx_point = 0

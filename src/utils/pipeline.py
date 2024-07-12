@@ -15,7 +15,7 @@ from src.utils.frame_processing import (
 
 
 def pipeline(
-    frames: np.ndarray, threshold: int = 25, min_length: int = 5, sampling_factor: int = 35
+    frames: np.ndarray, threshold: int = 25, min_length: int = 5, sampling_factor: float = 35
 ) -> np.ndarray:
     """
     Process the frames to generate a vector field indicating the reaction speed
@@ -31,6 +31,10 @@ def pipeline(
 
     min_length : int
         Minimum length of a contour to be considered.
+
+    sampling_factor : float
+        Factor by which the contour is downsampled. In range [1, infinity].
+        The higher the factor, the more points are removed.
 
     Returns
     -------
