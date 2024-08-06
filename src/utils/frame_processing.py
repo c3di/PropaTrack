@@ -8,10 +8,10 @@ from scipy import interpolate, signal
 from scipy.spatial.distance import cdist
 from skimage import morphology
 
-EDGE_KERNEL = np.array([[0, 1, 0], [1, 0, -1], [0, -1, 0]])
+_EDGE_KERNEL = np.array([[0, 1, 0], [1, 0, -1], [0, -1, 0]])
 
-DISK_1 = morphology.disk(1)
-DISK_3 = morphology.disk(3)
+_DISK_1 = morphology.disk(1)
+_DISK_3 = morphology.disk(3)
 
 
 def front_from_frames(
@@ -179,7 +179,7 @@ def _binarize(frame: np.ndarray, threshold: float = 25) -> None:
 
 def _edges_from_frame(frame: np.ndarray) -> np.ndarray:
     """Extract edges from a binarized frame using a simple derivative filter."""
-    edges = np.abs(signal.convolve2d(frame, EDGE_KERNEL, mode="same", boundary="symm")).astype(
+    edges = np.abs(signal.convolve2d(frame, _EDGE_KERNEL, mode="same", boundary="symm")).astype(
         np.uint8
     )
     _binarize(edges)
@@ -191,8 +191,8 @@ def _front_from_edges(edges0: np.ndarray, edges1: np.ndarray, edges2: np.ndarray
     Get the reaction front from the edges detected in three frames.
     Front is located in the frame corresponding to edges1.
     """
-    edges0 = cv2.dilate(edges0, DISK_1, iterations=3)
-    edges2 = cv2.dilate(edges2, DISK_1, iterations=3)
+    edges0 = cv2.dilate(edges0, _DISK_1, iterations=3)
+    edges2 = cv2.dilate(edges2, _DISK_1, iterations=3)
     front = edges1 - edges0 - edges2
     front[front != 255] = 0
     return front
@@ -201,7 +201,7 @@ def _front_from_edges(edges0: np.ndarray, edges1: np.ndarray, edges2: np.ndarray
 def _apply_morphology(front: np.ndarray) -> np.ndarray:
     """Apply morphological operations to the reaction front."""
 
-    front = morphology.closing(front, DISK_3)
+    front = morphology.closing(front, _DISK_3)
     front = morphology.skeletonize(front)
 
     front = np.where(front == 1, 255, 0).astype(np.uint8)
