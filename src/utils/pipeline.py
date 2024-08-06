@@ -101,5 +101,5 @@ def write_data(speeds: np.ndarray, result_path: str):
     """
     header = "frame,contour,x_pos,y_pos,x_normal,y_normal,speed"
     # First four columns are integers, last three are floats with 3 decimal places.
-    fmt = "%d %d %d %d %1.3f %1.3f %1.3f"
+    fmt = "%d, %d, %d, %d, %1.3f, %1.3f, %1.3f"
     np.savetxt(result_path, speeds, fmt=fmt, delimiter=",", header=header)
