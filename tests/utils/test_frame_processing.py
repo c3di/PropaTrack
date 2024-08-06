@@ -4,7 +4,7 @@ from unittest import TestCase
 
 import numpy as np
 
-from src.utils.frame_processing import _find_outliers, _handle_outliers, dist_to_nearest
+from src.utils.frame_processing import _find_outliers, _handle_outliers
 
 
 class TestFindOutliers(TestCase):
@@ -42,18 +42,6 @@ class TestHandleOutliers(TestCase):
         contour = np.array([[8, 1], [8, 2], [8, 3], [9, 3], [9, 4], [9, 5]])
         contour_filtered = _handle_outliers(contour)
         self.assertTrue(np.array_equal(contour, contour_filtered))
-
-    def test_handle_outliers_end(self):
-        """Test that the last point is removed."""
-        contour = np.array([[8, 1], [8, 2], [8, 3], [9, 3], [9, 4], [14, 8]])
-        contour_filtered = _handle_outliers(contour)
-        self.assertTrue(np.array_equal(contour[:-1], contour_filtered))
-
-    def test_handle_outliers_end_prev(self):
-        """Test that the last two points are removed."""
-        contour = np.array([[8, 1], [8, 2], [8, 3], [9, 3], [14, 7], [14, 8]])
-        contour_filtered = _handle_outliers(contour)
-        self.assertTrue(np.array_equal(contour[:-2], contour_filtered))
 
     def test_handle_outliers_middle(self):
         """Test that the part of the contour after the outlier is reversed and prepended."""
@@ -197,48 +185,3 @@ class TestHandleOutliers(TestCase):
         )
         contour_filtered = _handle_outliers(contour)
         self.assertTrue(np.array_equal(contour_filtered, contour_expected))
-
-
-class TestDistToNearest(TestCase):
-    """Test function dist_to_nearest."""
-
-    def test_dist_to_nearest_none(self):
-        """Test that distance is np.inf when no contours are present."""
-        point = np.array([1, 1])
-        contours_next = []
-        dist, idx, _ = dist_to_nearest(point, contours_next)
-        self.assertEqual(dist, np.inf)
-        self.assertEqual(idx, -1)
-
-    def test_dist_to_nearest_multiple(self):
-        """Test that a point is assigned to the nearest contour."""
-        point = np.array([8, 3])
-        contours_next = [
-            np.array([[6, 1], [6, 2], [6, 3], [6, 4], [6, 5]]),
-            np.array([[10, 1], [10, 2], [10, 3], [8, 4], [10, 5]]),
-            np.array([[1, 1], [2, 1], [3, 1], [4, 1], [5, 1]]),
-            np.array([[1, 5], [2, 5], [3, 5], [4, 5], [5, 5]]),
-        ]
-        dist, idx, _ = dist_to_nearest(point, contours_next)
-        self.assertEqual(dist, 1)
-        self.assertEqual(idx, 1)
-
-    def test_dist_to_nearest_below(self):
-        """
-        Test that the distance has a positive sign when the nearest contour
-        is below the point on the x-axis of the image (has a larger x-value).
-        """
-        point = np.array([1, 2])
-        contours_next = [np.array([[2, 0], [2, 1], [2, 2], [2, 3], [2, 4]])]
-        _, _, sign_x = dist_to_nearest(point, contours_next)
-        self.assertEqual(sign_x, 1)
-
-    def test_dist_to_nearest_above(self):
-        """
-        Test that the distance has a positive sign when the nearest contour
-        is below the point on the x-axis of the image (has a larger x-value).
-        """
-        point = np.array([4, 2])
-        contours_next = [np.array([[2, 0], [2, 1], [2, 2], [2, 3], [2, 4]])]
-        _, _, sign_x = dist_to_nearest(point, contours_next)
-        self.assertEqual(sign_x, -1)

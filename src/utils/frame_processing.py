@@ -121,38 +121,54 @@ def spline_from_contour(contour: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     return spline, normals
 
 
-def dist_to_nearest(point: np.ndarray, contours_next: list[np.ndarray]) -> Tuple[float, int, int]:
+def vec_to_nearest(point: np.ndarray, contours: list[np.ndarray]) -> np.ndarray | None:
     """
-    Find the minimum distance from a point on a spline to the nearest contour in the next frame.
+    Find the vector to the nearest contour in the next frame.
 
     Parameters
     ----------
     point : np.ndarray
         Point on a spline given as [x, y].
 
-    contours_next : list[np.ndarray]
+    contours : list[np.ndarray]
        List of all contours in the next frame.
 
     Returns
     -------
-    Tuple[float, float, int]
+    np.ndarray
+        Vector to the nearest contour.
 
     """
-    min_dist = np.inf
-    idx_min = -1
-    sign = 0
-    for idx, contour_next in enumerate(contours_next):
-        distances = cdist(np.expand_dims(point, axis=0), contour_next)
-        dist_idx = np.argmin(distances)
-        dist = distances[0, dist_idx]
-        if dist < min_dist:
-            min_dist = dist
-            idx_min = idx
-            vec_next = contour_next[dist_idx] - point
-            max_mag_idx = np.argmax(np.abs(vec_next))
-            sign = np.sign(vec_next[max_mag_idx])
+    if contours:
+        idx_contour = 0
+        idx_point = 0
+        min_dist = np.inf
+        point_expanded = np.expand_dims(point, axis=0)
+        for idx, contour in enumerate(contours):
+            distances = cdist(point_expanded, contour)
+            dist_idx = np.argmin(distances)
+            dist = distances[0, dist_idx]
+            if dist < min_dist:
+                min_dist = dist
+                idx_contour = idx
+                idx_point = dist_idx
+        nearest_point = contours[idx_contour][idx_point]
 
-    return min_dist, idx_min, sign
+        return nearest_point - point
+
+    return None
+
+
+def orient_normal(normal: np.ndarray, vec_nearest: np.ndarray) -> np.ndarray:
+    """
+    Orient the normal vector towards the nearest contour.
+    """
+    dir_similarity = np.dot(normal, vec_nearest)
+
+    if dir_similarity < 0:
+        return -normal
+
+    return normal
 
 
 def _binarize(frame: np.ndarray, threshold: float = 25) -> None:
@@ -237,17 +253,16 @@ def _handle_outliers(contour: np.ndarray) -> np.ndarray:
 
     if outlier_indices.size > 0:
         idx_first_outlier = outlier_indices[0]
-        if idx_first_outlier >= len(contour) - 2:
-            contour = contour[:idx_first_outlier]
+        contour_truncated = contour[:idx_first_outlier]
+        idx_last_outlier = outlier_indices[-1]
+        contour_rest = contour[idx_last_outlier:]
+        if np.linalg.norm(contour_rest[0] - contour_truncated[0]) <= 2 * mean_dist:
+            contour_rest_rev = contour_rest[::-1]
+            contour = np.concatenate((contour_rest_rev, contour_truncated))
         else:
-            contour_truncated = contour[:idx_first_outlier]
-            idx_last_outlier = outlier_indices[-1]
-            contour_rest = contour[idx_last_outlier:]
-            if np.linalg.norm(contour_rest[0] - contour_truncated[0]) <= 2 * mean_dist:
-                contour_rest_rev = contour_rest[::-1]
-                contour = np.concatenate((contour_rest_rev, contour_truncated))
-            else:
-                contour = contour_truncated
+            if contour_rest.size > contour_truncated.size:
+                return contour_rest
+            return contour_truncated
 
     return contour
 
@@ -264,12 +279,3 @@ def _process_contour(contour: np.ndarray) -> np.ndarray:
     contour = _handle_outliers(contour)
 
     return contour
-
-
-def _orient_normal(normal: np.ndarray, sign: int) -> np.ndarray:
-    """
-    Orient the normal based on the sign of the x-component of the normal.
-    """
-    if np.sign(normal[np.argmax(np.abs(normal))]) != sign:
-        normal = -normal
-    return normal
