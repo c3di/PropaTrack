@@ -163,12 +163,7 @@ def orient_normal(normal: np.ndarray, vec_nearest: np.ndarray) -> np.ndarray:
     """
     Orient the normal vector towards the nearest contour.
     """
-    dir_similarity = np.dot(normal, vec_nearest)
-
-    if dir_similarity < 0:
-        return -normal
-
-    return normal
+    return normal if np.dot(normal, vec_nearest) >= 0 else -normal
 
 
 def _binarize(frame: np.ndarray, threshold: float = 25) -> None:
@@ -218,15 +213,9 @@ def _remove_duplicates(contour: np.ndarray) -> np.ndarray:
 
 def _sample_contour(contour: np.ndarray) -> np.ndarray:
     """Sample the contour to get evenly spaced points."""
-    length_per_arrow = 15
-    num_arrows = cv2.arcLength(contour, False) / length_per_arrow + 1
-    steps = max(int(len(contour) / num_arrows), 1)
-    if (len(contour) - 1) % steps == 0:
-        contour = contour[::steps]
-    else:
-        # Make sure the last point is included, so contours don't get cut off.
-        contour = np.append(contour[::steps], contour[-1:], axis=0)
-    return contour
+    keep_rate = 0.0625
+    steps = int(1 / keep_rate)
+    return np.append(contour[::steps], contour[-1:], axis=0)
 
 
 def _find_outliers(contour: np.ndarray) -> Tuple[np.ndarray, float]:
@@ -271,10 +260,9 @@ def _process_contour(contour: np.ndarray) -> np.ndarray:
     """
     Process a contour by removing duplicate points and outliers and downsampling.
     """
+    contour = _sample_contour(contour)
 
     contour = _remove_duplicates(contour)
-
-    contour = _sample_contour(contour)
 
     contour = _handle_outliers(contour)
 
