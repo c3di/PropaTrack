@@ -34,7 +34,7 @@ def main(arguments: argparse.Namespace) -> None:
     result_path_img, result_path_txt = get_paths(arguments)
 
     frames = get_video_frames(arguments.video_path)
-    results = pipeline(frames, arguments.threshold, arguments.min_length)
+    results = pipeline(frames, arguments.threshold)
     write_data(results, result_path_txt)
 
     print(f"Successfully saved the vector field as a .txt file to {arguments.result_dir}.")
@@ -58,12 +58,6 @@ if __name__ == "__main__":
         default=25,
         type=restricted_int,
         help="Minimum intensity for pixels to be considered part of the front. Default: 25.",
-    )
-    parser.add_argument(
-        "-l",
-        "--min_length",
-        default=5,
-        help="Minimum length for contours to not be considered as noise. Default: 5.",
     )
     parser.add_argument(
         "-s",

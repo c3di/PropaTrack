@@ -55,7 +55,7 @@ def front_from_frames(
     return front
 
 
-def contours_from_front(front: np.ndarray, min_length: int = 5) -> list:
+def contours_from_front(front: np.ndarray) -> list[np.ndarray]:
     """
     Extract contours from a reaction front.
 
@@ -64,19 +64,14 @@ def contours_from_front(front: np.ndarray, min_length: int = 5) -> list:
     front : np.ndarray
         Reaction front.
 
-    min_length : int
-        Minimum length of a contour to be considered.
-
     Returns
     -------
-    list
+    list[np.ndarray]
         Contours of the reaction front.
     """
 
     contours, _ = cv2.findContours(front, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-    contours = [
-        np.squeeze(contour) for contour in contours if cv2.arcLength(contour, False) > min_length
-    ]
+    contours = [np.squeeze(contour) for contour in contours if cv2.arcLength(contour, False) > 5]
 
     return contours
 
