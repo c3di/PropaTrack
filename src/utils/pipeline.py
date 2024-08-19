@@ -9,7 +9,7 @@ from tqdm import tqdm
 from src.utils.frame_processing import (
     contours_from_front,
     front_from_frames,
-    orient_normal,
+    get_direction,
     spline_from_contour,
     vec_to_nearest,
 )
@@ -75,10 +75,10 @@ def pipeline(frames: np.ndarray, threshold: int = 25) -> np.ndarray:
                     if vec_nearest is None:
                         continue
 
-                    normal = orient_normal(normal, vec_nearest)
+                    vec_dir = get_direction(normal, vec_nearest)
 
                     speeds.append(
-                        [i, j, point[0], point[1], normal[0], normal[1], length(vec_nearest)]
+                        [i, j, point[0], point[1], vec_dir[0], vec_dir[1], length(vec_nearest)]
                     )
 
             i += 1
