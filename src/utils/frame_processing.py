@@ -15,7 +15,11 @@ _DISK_3 = morphology.disk(3)
 
 
 def front_from_frames(
-    frame0: np.ndarray, frame1: np.ndarray, frame2: np.ndarray, threshold: float = 25
+    frame0: np.ndarray,
+    frame1: np.ndarray,
+    frame2: np.ndarray,
+    threshold: float = 25,
+    filter_steps: int = 3,
 ) -> np.ndarray:
     """
     Generate a denoised version of the reaction front from three frames.
@@ -29,6 +33,10 @@ def front_from_frames(
     threshold : float
         Lower threshold for binarization. Set all pixel values below this threshold to 0.
 
+    filter_steps: int
+        Number of iterations for applying morphological filter.
+        Makes front contour more accurate at the risk of losing it in part.
+
     Returns
     -------
     np.ndarray
@@ -38,6 +46,9 @@ def front_from_frames(
     -----
     You can get a concise overview about mathematical morphology here:
     https://scikit-image.org/docs/stable/auto_examples/applications/plot_morphology.html
+
+    It is recommended that you set filter_steps to 1 for low resolution videos and to 3
+    for higher resolution videos.
     """
 
     _binarize(frame0, threshold)
@@ -48,7 +59,7 @@ def front_from_frames(
     edges1 = _edges_from_frame(frame1)
     edges2 = _edges_from_frame(frame2)
 
-    front = _front_from_edges(edges0, edges1, edges2)
+    front = _front_from_edges(edges0, edges1, edges2, filter_steps)
 
     front = _apply_morphology(front)
 
@@ -185,13 +196,15 @@ def _edges_from_frame(frame: np.ndarray) -> np.ndarray:
     return edges
 
 
-def _front_from_edges(edges0: np.ndarray, edges1: np.ndarray, edges2: np.ndarray) -> np.ndarray:
+def _front_from_edges(
+    edges0: np.ndarray, edges1: np.ndarray, edges2: np.ndarray, filter_steps: int
+) -> np.ndarray:
     """
     Get the reaction front from the edges detected in three frames.
     Front is located in the frame corresponding to edges1.
     """
-    edges0 = cv2.dilate(edges0, _DISK_1, iterations=1)
-    edges2 = cv2.dilate(edges2, _DISK_1, iterations=1)
+    edges0 = cv2.dilate(edges0, _DISK_1, iterations=filter_steps)
+    edges2 = cv2.dilate(edges2, _DISK_1, iterations=filter_steps)
     front = edges1 - edges0 - edges2
     front[front != 255] = 0
 

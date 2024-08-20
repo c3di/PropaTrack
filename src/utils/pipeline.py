@@ -20,7 +20,9 @@ def length(arr: np.ndarray) -> float:
     return np.linalg.norm(arr, 2)
 
 
-def pipeline(frames: np.ndarray, threshold: int = 25, sample_gap: int = 15) -> np.ndarray:
+def pipeline(
+    frames: np.ndarray, threshold: int = 25, sample_gap: int = 15, filter_steps: int = 3
+) -> np.ndarray:
     """
     Process the frames to generate a vector field indicating the reaction speed
     at evenly spread points for each frame.
@@ -36,6 +38,10 @@ def pipeline(frames: np.ndarray, threshold: int = 25, sample_gap: int = 15) -> n
     sample_gap: int
         Number of pixels between two sampling points on a contour.
 
+    filter_steps: int
+        Number of iterations for applying morphological filter.
+        Makes front contour more accurate at the risk of losing it in part.
+
     Returns
     -------
     np.ndarray
@@ -45,6 +51,9 @@ def pipeline(frames: np.ndarray, threshold: int = 25, sample_gap: int = 15) -> n
     -------
     Format of the vector field: \n
     [frame, contour, x_pos, y_pos, x_normal, y_normal, speed]
+
+    It is recommended that you set filter_steps to 1 for low resolution videos and to 3
+    for higher resolution videos.
 
     See Also
     --------
@@ -60,13 +69,13 @@ def pipeline(frames: np.ndarray, threshold: int = 25, sample_gap: int = 15) -> n
     ) as pbar:
 
         contours = contours_from_front(
-            front_from_frames(frames[0], frames[1], frames[2], threshold=threshold)
+            front_from_frames(frames[0], frames[1], frames[2], threshold, filter_steps)
         )
 
         i = 1
         while i < (len(frames) - 2):
             contours_next = contours_from_front(
-                front_from_frames(frames[i], frames[i + 1], frames[i + 2], threshold=threshold)
+                front_from_frames(frames[i], frames[i + 1], frames[i + 2], threshold, filter_steps)
             )
 
             for j, contour in enumerate(contours):
