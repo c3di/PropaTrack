@@ -55,17 +55,6 @@ DFKI_COLORS = np.array(
 dfki_cmap = LinearSegmentedColormap.from_list("custom_cmap", DFKI_COLORS, N=256)
 
 
-def clamp(x: float, minimum: float, maximum: float) -> float:
-    """Clamp a value between a minimum and maximum."""
-    return max(minimum, min(x, maximum))
-
-
-def dist_to_idx(dist: float) -> int:
-    """Map distance to an index for querying a colormap."""
-    idx = 25.5 * dist - 153
-    return int(clamp(idx, 0, 255))
-
-
 def plot_vector_field(results: np.ndarray, result_path: str) -> None:
     """
     Plot the vector field for the reaction speed.
@@ -82,18 +71,31 @@ def plot_vector_field(results: np.ndarray, result_path: str) -> None:
     ----------
     pipeline.pipeline : Format of results.
     """
+    c_low_speed = "#0E2346"
+    c_avg_speed = "#7D4C97"
+    c_high_speed = "#EB629F"
 
     fig = plt.figure(dpi=400)
+    avg_speed = np.mean(results[:, -1])
     for result in tqdm(results, desc="Plotting vector field ", colour="#6DBEA0", unit=" vectors"):
+
         x, y, nx, ny, speed = result[2:]
+
         if speed > 15:
             continue
+
+        color = c_avg_speed
+        if speed < avg_speed - 0.25:
+            color = c_low_speed
+        elif speed > avg_speed + 0.25:
+            color = c_high_speed
+
         plt.quiver(
             x,
             y,
             nx,
             ny,
-            color=dfki_cmap(dist_to_idx(speed)),
+            color=color,
             angles="xy",
             scale_units="xy",
             scale=1 / (speed + 10e-6),
