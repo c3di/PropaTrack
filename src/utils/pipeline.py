@@ -20,7 +20,7 @@ def length(arr: np.ndarray) -> float:
     return np.linalg.norm(arr, 2)
 
 
-def pipeline(frames: np.ndarray, threshold: int = 25) -> np.ndarray:
+def pipeline(frames: np.ndarray, threshold: int = 25, sample_gap: int = 15) -> np.ndarray:
     """
     Process the frames to generate a vector field indicating the reaction speed
     at evenly spread points for each frame.
@@ -32,6 +32,9 @@ def pipeline(frames: np.ndarray, threshold: int = 25) -> np.ndarray:
 
     threshold : int
         During preprocessing set all pixel values below this threshold to 0.
+
+    sample_gap: int
+        Number of pixels between two sampling points on a contour.
 
     Returns
     -------
@@ -68,7 +71,7 @@ def pipeline(frames: np.ndarray, threshold: int = 25) -> np.ndarray:
 
             for j, contour in enumerate(contours):
 
-                for point, normal in zip(*spline_from_contour(contour)):
+                for point, normal in zip(*spline_from_contour(contour, sample_gap)):
 
                     vec_nearest = vec_to_nearest(point, contours_next)
 
