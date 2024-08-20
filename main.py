@@ -8,14 +8,6 @@ from src.utils.video_handling import get_video_frames
 from src.utils.visualization import plot_vector_field
 
 
-def restricted_int(x):
-    """Type for argparse to restrict the input to the range [0, 255]."""
-    x = int(x)
-    if x < 0 or x > 255:
-        raise argparse.ArgumentTypeError(f"{x} not in range [0, 255]")
-    return x
-
-
 def get_paths(arguments: argparse.Namespace):
     """Get the paths for the result files."""
 
@@ -34,7 +26,7 @@ def main(arguments: argparse.Namespace) -> None:
     result_path_img, result_path_txt = get_paths(arguments)
 
     frames = get_video_frames(arguments.video_path)
-    results = pipeline(frames, arguments.threshold, arguments.min_length)
+    results = pipeline(frames, arguments.threshold, arguments.sample_gap, arguments.filter_steps)
     write_data(results, result_path_txt)
 
     print(f"Successfully saved the vector field as a .txt file to {arguments.result_dir}.")
@@ -56,15 +48,27 @@ if __name__ == "__main__":
         "-t",
         "--threshold",
         default=25,
-        type=restricted_int,
+        type=int,
         help="Minimum intensity for pixels to be considered part of the front. Default: 25.",
     )
+
     parser.add_argument(
-        "-l",
-        "--min_length",
-        default=5,
-        help="Minimum length for contours to not be considered as noise. Default: 5.",
+        "-g",
+        "--sample_gap",
+        default=15,
+        type=int,
+        help="Number of pixels between two sampling points on a contour. Default: 15",
     )
+
+    parser.add_argument(
+        "-f",
+        "--filter_steps",
+        default=3,
+        type=int,
+        help="Makes front contour more accurate at the risk of losing it in part. "
+        "Recommended to use 1 for low resolution videos and 3 else. Default: 3",
+    )
+
     parser.add_argument(
         "-s",
         "--show",

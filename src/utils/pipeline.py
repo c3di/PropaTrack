@@ -7,15 +7,22 @@ import numpy as np
 from tqdm import tqdm
 
 from src.utils.frame_processing import (
-    _orient_normal,
     contours_from_front,
-    dist_to_nearest,
     front_from_frames,
+    get_direction,
     spline_from_contour,
+    vec_to_nearest,
 )
 
 
-def pipeline(frames: np.ndarray, threshold: int = 25, min_length: int = 5) -> np.ndarray:
+def length(arr: np.ndarray) -> float:
+    """Calculate the length of a vector."""
+    return np.linalg.norm(arr, 2)
+
+
+def pipeline(
+    frames: np.ndarray, threshold: int = 25, sample_gap: int = 15, filter_steps: int = 3
+) -> np.ndarray:
     """
     Process the frames to generate a vector field indicating the reaction speed
     at evenly spread points for each frame.
@@ -28,8 +35,12 @@ def pipeline(frames: np.ndarray, threshold: int = 25, min_length: int = 5) -> np
     threshold : int
         During preprocessing set all pixel values below this threshold to 0.
 
-    min_length : int
-        Minimum length of a contour to be considered.
+    sample_gap: int
+        Number of pixels between two sampling points on a contour.
+
+    filter_steps: int
+        Number of iterations for applying morphological filter.
+        Makes front contour more accurate at the risk of losing it in part.
 
     Returns
     -------
@@ -41,6 +52,9 @@ def pipeline(frames: np.ndarray, threshold: int = 25, min_length: int = 5) -> np
     Format of the vector field: \n
     [frame, contour, x_pos, y_pos, x_normal, y_normal, speed]
 
+    It is recommended that you set filter_steps to 1 for low resolution videos and to 3
+    for higher resolution videos.
+
     See Also
     --------
     video_handling.get_video_frames : Generation of frames.
@@ -50,24 +64,38 @@ def pipeline(frames: np.ndarray, threshold: int = 25, min_length: int = 5) -> np
 
     speeds = []
 
-    for i, _ in enumerate(
-        tqdm(frames[1:-2], desc="Running image pipeline", colour="#6DBEA0", unit=" frames")
-    ):
+    with tqdm(
+        total=len(frames) - 2, desc="Running image pipeline", colour="#6DBEA0", unit=" frames"
+    ) as pbar:
 
-        front = front_from_frames(frames[i - 1], frames[i], frames[i + 1], threshold=threshold)
-        contours = contours_from_front(front, min_length=min_length)
+        contours = contours_from_front(
+            front_from_frames(frames[0], frames[1], frames[2], threshold, filter_steps)
+        )
 
-        front = front_from_frames(frames[i], frames[i + 1], frames[i + 2], threshold=threshold)
-        contours_next = contours_from_front(front, min_length=min_length)
+        i = 1
+        while i < (len(frames) - 2):
+            contours_next = contours_from_front(
+                front_from_frames(frames[i], frames[i + 1], frames[i + 2], threshold, filter_steps)
+            )
 
-        for j, contour in enumerate(contours):
+            for j, contour in enumerate(contours):
 
-            spline, normals = spline_from_contour(contour)
+                for point, normal in zip(*spline_from_contour(contour, sample_gap)):
 
-            for point, normal in zip(spline, normals):
-                min_dist, _, sign_x = dist_to_nearest(point, contours_next)
-                normal = _orient_normal(normal, sign_x)
-                speeds.append([i, j, point[0], point[1], normal[0], normal[1], min_dist])
+                    vec_nearest = vec_to_nearest(point, contours_next)
+
+                    if vec_nearest is None:
+                        continue
+
+                    vec_dir = get_direction(normal, vec_nearest)
+
+                    speeds.append(
+                        [i, j, point[0], point[1], vec_dir[0], vec_dir[1], length(vec_nearest)]
+                    )
+
+            i += 1
+            contours = contours_next
+            pbar.update()
 
     return np.array(speeds)
 
@@ -95,5 +123,5 @@ def write_data(speeds: np.ndarray, result_path: str):
     """
     header = "frame,contour,x_pos,y_pos,x_normal,y_normal,speed"
     # First four columns are integers, last three are floats with 3 decimal places.
-    fmt = "%d %d %d %d %1.3f %1.3f %1.3f"
+    fmt = "%d, %d, %d, %d, %1.3f, %1.3f, %1.3f"
     np.savetxt(result_path, speeds, fmt=fmt, delimiter=",", header=header)
