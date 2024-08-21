@@ -19,7 +19,6 @@ def front_from_frames(
     frame1: np.ndarray,
     frame2: np.ndarray,
     threshold: float = 25,
-    filter_steps: int = 3,
 ) -> np.ndarray:
     """
     Generate a denoised version of the reaction front from three frames.
@@ -33,10 +32,6 @@ def front_from_frames(
     threshold : float
         Lower threshold for binarization. Set all pixel values below this threshold to 0.
 
-    filter_steps: int
-        Number of iterations for applying morphological filter.
-        Makes front contour more accurate at the risk of losing it in part.
-
     Returns
     -------
     np.ndarray
@@ -46,9 +41,6 @@ def front_from_frames(
     -----
     You can get a concise overview about mathematical morphology here:
     https://scikit-image.org/docs/stable/auto_examples/applications/plot_morphology.html
-
-    It is recommended that you set filter_steps to 1 for low resolution videos and to 3
-    for higher resolution videos.
     """
 
     _binarize(frame0, threshold)
@@ -59,7 +51,7 @@ def front_from_frames(
     edges1 = _edges_from_frame(frame1)
     edges2 = _edges_from_frame(frame2)
 
-    front = _front_from_edges(edges0, edges1, edges2, filter_steps)
+    front = _front_from_edges(edges0, edges1, edges2)
 
     front = _apply_morphology(front)
 
@@ -82,7 +74,7 @@ def contours_from_front(front: np.ndarray) -> list[np.ndarray]:
     """
 
     contours, _ = cv2.findContours(front, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-    contours = [np.squeeze(contour) for contour in contours if cv2.arcLength(contour, False) > 5]
+    contours = [np.squeeze(contour) for contour in contours if cv2.arcLength(contour, False) > 10]
 
     return contours
 
@@ -168,17 +160,21 @@ def vec_to_nearest(point: np.ndarray, contours: list[np.ndarray]) -> np.ndarray 
     return None
 
 
-def get_direction(normal: np.ndarray, vec_nearest: np.ndarray) -> np.ndarray:
+def get_direction(normal: np.ndarray, vec_nearest: np.ndarray) -> Tuple[np.ndarray, float]:
     """
     Decide which vector to use for indicating the direction of the reaction front.
     """
-    dir_similarity = np.dot(normal, vec_nearest)
+
+    speed = np.linalg.norm(vec_nearest)
+    vec_nearest_normalized = vec_nearest / speed
+    dir_similarity = np.dot(normal, vec_nearest_normalized)
 
     if abs(dir_similarity) < 0.9:
-        return vec_nearest / np.linalg.norm(vec_nearest)
+        speed *= dir_similarity
+        return vec_nearest_normalized, speed
     if dir_similarity < 0:
-        return -normal
-    return normal
+        return -normal, speed
+    return normal, speed
 
 
 def _binarize(frame: np.ndarray, threshold: float = 25) -> None:
@@ -196,15 +192,13 @@ def _edges_from_frame(frame: np.ndarray) -> np.ndarray:
     return edges
 
 
-def _front_from_edges(
-    edges0: np.ndarray, edges1: np.ndarray, edges2: np.ndarray, filter_steps: int
-) -> np.ndarray:
+def _front_from_edges(edges0: np.ndarray, edges1: np.ndarray, edges2: np.ndarray) -> np.ndarray:
     """
     Get the reaction front from the edges detected in three frames.
     Front is located in the frame corresponding to edges1.
     """
-    edges0 = cv2.dilate(edges0, _DISK_1, iterations=filter_steps)
-    edges2 = cv2.dilate(edges2, _DISK_1, iterations=filter_steps)
+    edges0 = cv2.dilate(edges0, _DISK_1, iterations=3)
+    edges2 = cv2.dilate(edges2, _DISK_1, iterations=3)
     front = edges1 - edges0 - edges2
     front[front != 255] = 0
 
