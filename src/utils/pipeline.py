@@ -78,11 +78,9 @@ def pipeline(frames: np.ndarray, threshold: int = 25, sample_gap: int = 15) -> n
                     if vec_nearest is None:
                         continue
 
-                    vec_dir = get_direction(normal, vec_nearest)
+                    vec_dir, speed = get_direction(normal, vec_nearest)
 
-                    speeds.append(
-                        [i, j, point[0], point[1], vec_dir[0], vec_dir[1], length(vec_nearest)]
-                    )
+                    speeds.append([i, j, point[0], point[1], vec_dir[0], vec_dir[1], speed])
 
             i += 1
             contours = contours_next
