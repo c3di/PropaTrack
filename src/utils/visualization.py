@@ -76,7 +76,7 @@ def plot_vector_field(results: np.ndarray, result_path: str) -> None:
     c_high_speed = "#EB629F"
 
     fig = plt.figure(dpi=400)
-    avg_speed = np.mean(results[:, -1])
+    avg_speed = np.mean(results[results[:, -1] < 15][:, -1])
     for result in tqdm(results, desc="Plotting vector field ", colour="#6DBEA0", unit=" vectors"):
 
         x, y, nx, ny, speed = result[2:]
@@ -85,9 +85,9 @@ def plot_vector_field(results: np.ndarray, result_path: str) -> None:
             continue
 
         color = c_avg_speed
-        if speed < avg_speed - 0.25:
+        if speed < avg_speed - 2:
             color = c_low_speed
-        elif speed > avg_speed + 0.25:
+        elif speed > avg_speed + 2:
             color = c_high_speed
 
         plt.quiver(

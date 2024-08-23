@@ -26,7 +26,7 @@ def main(arguments: argparse.Namespace) -> None:
     result_path_img, result_path_txt = get_paths(arguments)
 
     frames = get_video_frames(arguments.video_path)
-    results = pipeline(frames, arguments.threshold, arguments.sample_gap, arguments.filter_steps)
+    results = pipeline(frames, arguments.threshold, arguments.sample_gap)
     write_data(results, result_path_txt)
 
     print(f"Successfully saved the vector field as a .txt file to {arguments.result_dir}.")
@@ -58,15 +58,6 @@ if __name__ == "__main__":
         default=15,
         type=int,
         help="Number of pixels between two sampling points on a contour. Default: 15",
-    )
-
-    parser.add_argument(
-        "-f",
-        "--filter_steps",
-        default=3,
-        type=int,
-        help="Makes front contour more accurate at the risk of losing it in part. "
-        "Recommended to use 1 for low resolution videos and 3 else. Default: 3",
     )
 
     parser.add_argument(
