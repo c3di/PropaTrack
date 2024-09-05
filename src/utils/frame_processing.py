@@ -169,8 +169,8 @@ def get_direction(normal: np.ndarray, vec_nearest: np.ndarray) -> Tuple[np.ndarr
     vec_nearest_normalized = vec_nearest / speed
     dir_similarity = np.dot(normal, vec_nearest_normalized)
 
-    if abs(dir_similarity) < 0.9:
-        speed *= dir_similarity
+    if abs(dir_similarity) < 0.5:
+        speed *= abs(dir_similarity)
         return vec_nearest_normalized, speed
     if dir_similarity < 0:
         return -normal, speed

@@ -10,10 +10,15 @@ IMG_DIR = "results/visualization"
 
 def plot_simple(img: np.ndarray, title: str, img_dir) -> None:
     """Plot a single image."""
+
+    height, width = img.shape[:2]
+    figsize = (width / 100, height / 100)
+    fig = plt.figure(figsize=figsize)
+
     plt.imshow(img, cmap="gray")
     plt.axis("off")
-    plt.savefig(f"{img_dir}/{title}.png", dpi=400)
-    plt.close()
+    plt.savefig(f"{img_dir}/{title}.png", bbox_inches="tight", pad_inches=0)
+    plt.close(fig)
 
 
 def plot_contour(contour: np.ndarray, canvas: np.ndarray, title: str, img_dir: str) -> None:
